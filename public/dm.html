@@ -17,6 +17,7 @@
       align-items: center;
       box-sizing: border-box;
       z-index: 100;
+      transition: top 0.3s;
     }
 
     #toolbar input {
@@ -33,15 +34,15 @@
       padding: 5px 10px;
       border: none;
       border-radius: 3px;
-      background-color: rgb(255,255,255,0.1);
-      backdrop-filter: blur(16zpx);
+      background-color: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(16px);
       color: #fff;
       cursor: pointer;
       margin-right: 10px;
     }
 
     #toolbar button:hover {
-      background-color: rgb(255,255,255,0.2);
+      background-color: rgba(255, 255, 255, 0.2);
     }
 
     #scene-buttons-container {
@@ -90,15 +91,35 @@
       color: #888;
       flex-direction: column;
     }
+
+    #toggle-toolbar-button {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 101;
+      padding: 5px 10px;
+      border: none;
+      border-radius: 3px;
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      cursor: pointer;
+    }
+
+    #toggle-toolbar-button:hover {
+      background-color: rgba(255, 255, 255, 0.2);
+    }
   </style>
 </head>
 
 <body>
+  <!-- Toggle Toolbar Button -->
+  <button id="toggle-toolbar-button">Hide</button>
+
   <div id="toolbar">
     <!-- Create Scene -->
-    <button id="create-scene-button" style="background-color: rgb(200,255,200,0.2); margin-right: 10px;" onmouseover="this.style.backgroundColor='rgb(200,255,200,0.3)'" onmouseout="this.style.backgroundColor='rgb(200,255,200,0.2)'">Create Scene</button>
+    <button id="create-scene-button" style="background-color: rgba(200, 255, 200, 0.2); margin-right: 10px;" onmouseover="this.style.backgroundColor='rgba(200, 255, 200, 0.3)'" onmouseout="this.style.backgroundColor='rgba(200, 255, 200, 0.2)'">Create Scene</button>
 
-    <!-- Short little vertical line seperator -->
+    <!-- Short little vertical line separator -->
     <div style="height: 20px; width: 1px; background-color: #555; margin-right: 10px;"></div>
 
     <!-- Scene Buttons -->
@@ -124,6 +145,21 @@
   <script src="/socket.io/socket.io.js"></script>
   <!-- DM script -->
   <script src="/js/dm.js"></script>
+
+  <script>
+    const toolbar = document.getElementById('toolbar');
+    const toggleButton = document.getElementById('toggle-toolbar-button');
+
+    toggleButton.addEventListener('click', () => {
+      if (toolbar.style.top === '0px' || toolbar.style.top === '') {
+        toolbar.style.top = '-50px'; // Adjust this value based on the toolbar height
+        toggleButton.textContent = 'Show';
+      } else {
+        toolbar.style.top = '0px';
+        toggleButton.textContent = 'Hide';
+      }
+    });
+  </script>
 </body>
 
 </html>
