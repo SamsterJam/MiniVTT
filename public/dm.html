@@ -7,19 +7,29 @@
   <title>VTT - Dungeon Master</title>
   <!-- Include CSS -->
   <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    #scene-container.dragover {
+      border-color: #00f;
+      background-color: rgba(0, 0, 255, 0.1);
+    }
+    .token {
+      cursor: move;
+    }
+    .instructions {
+      text-align: center;
+      color: #888;
+      margin-top: 50px;
+    }
+  </style>
 </head>
 <body>
   <h1>Dungeon Master Interface</h1>
 
   <div id="toolbar">
-    <!-- Toolbar elements like upload button will go here -->
+    <!-- Toolbar elements -->
     <!-- Create Scene -->
     <input type="text" id="scene-name-input" placeholder="Scene Name">
     <button id="create-scene-button">Create Scene</button>
-
-    <!-- Upload Token Image -->
-    <input type="file" id="token-upload" accept="image/*">
-    <button id="upload-token-button">Upload Token</button>
 
     <!-- Switch Scenes -->
     <select id="scene-select"></select>
@@ -28,6 +38,7 @@
 
   <div id="scene-container">
     <!-- Scene canvas -->
+    <p class="instructions">Drag and drop images here to add tokens to your scene.</p>
   </div>
 
   <!-- Include scripts at the end of the body -->

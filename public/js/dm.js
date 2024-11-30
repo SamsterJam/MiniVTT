@@ -7,17 +7,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
   let currentScene = null;
 
-  // Handle token image upload
-  document.getElementById('upload-token-button').addEventListener('click', function() {
+  const sceneContainer = document.getElementById('scene-container');
+
+  // Handle dragover event to allow drop
+  sceneContainer.addEventListener('dragover', function(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+
+    // Add visual feedback
+    sceneContainer.classList.add('dragover');
+  });
+
+  // Handle dragleave event to remove visual feedback
+  sceneContainer.addEventListener('dragleave', function(event) {
+    sceneContainer.classList.remove('dragover');
+  });
+
+  // Handle drop event
+  sceneContainer.addEventListener('drop', function(event) {
+    event.preventDefault();
+    sceneContainer.classList.remove('dragover');
 
     if (!currentScene) {
       alert('Please load or create a scene first.');
       return;
     }
-    const fileInput = document.getElementById('token-upload');
-    if (fileInput.files.length > 0) {
+
+    const files = event.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+
       const formData = new FormData();
-      formData.append('image', fileInput.files[0]);
+      formData.append('image', file);
 
       fetch('/upload', {
         method: 'POST',
@@ -26,18 +47,24 @@ document.addEventListener('DOMContentLoaded', function() {
       .then(response => response.json())
       .then(data => {
         const imageUrl = data.imageUrl;
+        // Get the drop position relative to the scene container
+        const rect = sceneContainer.getBoundingClientRect();
+        const x = event.clientX - rect.left;
+        const y = event.clientY - rect.top;
+
         // Create a new token
         const token = {
           tokenId: Date.now().toString(),
           imageUrl: imageUrl,
-          x: 100,
-          y: 100,
+          x: x,
+          y: y,
           width: 100,
           height: 100,
           rotation: 0,
           movableByPlayers: false,
           name: 'New Token'
         };
+
         // Add token to the scene
         currentScene.tokens.push(token);
         // Save the scene on the server
@@ -121,7 +148,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Function to render a scene
   function renderScene(scene) {
-    const sceneContainer = document.getElementById('scene-container');
     sceneContainer.innerHTML = ''; // Clear existing content
 
     // Render tokens
@@ -132,8 +158,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Function to render a token
   function renderToken(token) {
-    const sceneContainer = document.getElementById('scene-container');
-
     const img = document.createElement('img');
     img.src = token.imageUrl;
     img.id = `token-${token.tokenId}`;
@@ -170,24 +194,24 @@ document.addEventListener('DOMContentLoaded', function() {
   function onTokenDragMove(event) {
     const target = event.target;
     const tokenId = target.dataset.tokenId;
-  
+
     // Calculate new position
     const deltaX = event.dx;
     const deltaY = event.dy;
-    
+
     // Update the actual position properties
     const newLeft = (parseFloat(target.style.left) || 0) + deltaX;
     const newTop = (parseFloat(target.style.top) || 0) + deltaY;
-    
+
     target.style.left = `${newLeft}px`;
     target.style.top = `${newTop}px`;
-  
+
     // Update token position in currentScene
     const token = currentScene.tokens.find(t => t.tokenId === tokenId);
     if (token) {
       token.x = newLeft;
       token.y = newTop;
-  
+
       // Send update to server
       socket.emit('updateToken', {
         sceneId: currentScene.sceneId,
@@ -201,24 +225,24 @@ document.addEventListener('DOMContentLoaded', function() {
   function onTokenResizeMove(event) {
     const target = event.target;
     const tokenId = target.dataset.tokenId;
-  
+
     let newWidth = event.rect.width;
     let newHeight = event.rect.height;
-  
+
     // Update the element's style
     target.style.width = `${newWidth}px`;
     target.style.height = `${newHeight}px`;
-  
+
     // Optionally adjust position if needed
     const deltaX = event.deltaRect.left;
     const deltaY = event.deltaRect.top;
-  
+
     const newLeft = (parseFloat(target.style.left) || 0) + deltaX;
     const newTop = (parseFloat(target.style.top) || 0) + deltaY;
-  
+
     target.style.left = `${newLeft}px`;
     target.style.top = `${newTop}px`;
-  
+
     // Update token size and position in currentScene
     const token = currentScene.tokens.find(t => t.tokenId === tokenId);
     if (token) {
@@ -226,7 +250,7 @@ document.addEventListener('DOMContentLoaded', function() {
       token.y = newTop;
       token.width = newWidth;
       token.height = newHeight;
-  
+
       // Send update to server
       socket.emit('updateToken', {
         sceneId: currentScene.sceneId,
@@ -244,12 +268,12 @@ document.addEventListener('DOMContentLoaded', function() {
   // Handle token updates from the server
   socket.on('updateToken', ({ sceneId, tokenId, properties }) => {
     if (currentScene.sceneId !== sceneId) return;
-  
+
     const token = currentScene.tokens.find(t => t.tokenId === tokenId);
     if (token) {
       // Update token properties
       Object.assign(token, properties);
-  
+
       // Update the DOM element
       const img = document.getElementById(`token-${tokenId}`);
       if (img) {
