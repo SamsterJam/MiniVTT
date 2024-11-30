@@ -123,3 +123,13 @@ socket.on('updateToken', ({ sceneId, tokenId, properties }) => {
     }
   }
 });
+
+socket.on('addToken', ({ sceneId, token }) => {
+  if (currentScene.sceneId !== sceneId) return;
+
+  // Add the new token to the scene's token list
+  currentScene.tokens.push(token);
+
+  // Render the new token
+  renderToken(token);
+});
