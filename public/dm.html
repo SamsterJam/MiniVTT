@@ -12,6 +12,9 @@
       border-color: #00f;
       background-color: rgba(0, 0, 255, 0.1);
     }
+    #scene-container {
+      background-color: #dddddd;
+    }
     .token {
       cursor: move;
     }
@@ -20,11 +23,15 @@
       color: #888;
       margin-top: 50px;
     }
+    #toolbar {
+      position: absolute;
+      top: 10;
+      left: 0;
+      z-index: 100;
+    }
   </style>
 </head>
 <body>
-  <h1>Dungeon Master Interface</h1>
-
   <div id="toolbar">
     <!-- Toolbar elements -->
     <!-- Create Scene -->

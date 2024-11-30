@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   const socket = io();
 
   socket.on('connect', () => {
@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', function() {
   const sceneContainer = document.getElementById('scene-container');
 
   // Handle dragover event to allow drop
-  sceneContainer.addEventListener('dragover', function(event) {
+  sceneContainer.addEventListener('dragover', function (event) {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'copy';
 
@@ -19,12 +19,12 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 
   // Handle dragleave event to remove visual feedback
-  sceneContainer.addEventListener('dragleave', function(event) {
+  sceneContainer.addEventListener('dragleave', function (event) {
     sceneContainer.classList.remove('dragover');
   });
 
   // Handle drop event
-  sceneContainer.addEventListener('drop', function(event) {
+  sceneContainer.addEventListener('drop', function (event) {
     event.preventDefault();
     sceneContainer.classList.remove('dragover');
 
@@ -44,42 +44,42 @@ document.addEventListener('DOMContentLoaded', function() {
         method: 'POST',
         body: formData
       })
-      .then(response => response.json())
-      .then(data => {
-        const imageUrl = data.imageUrl;
-        // Get the drop position relative to the scene container
-        const rect = sceneContainer.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
+        .then(response => response.json())
+        .then(data => {
+          const imageUrl = data.imageUrl;
+          // Get the drop position relative to the scene container
+          const rect = sceneContainer.getBoundingClientRect();
+          const x = event.clientX - rect.left;
+          const y = event.clientY - rect.top;
 
-        // Create a new token
-        const token = {
-          tokenId: Date.now().toString(),
-          imageUrl: imageUrl,
-          x: x,
-          y: y,
-          width: 100,
-          height: 100,
-          rotation: 0,
-          movableByPlayers: false,
-          name: 'New Token'
-        };
+          // Create a new token
+          const token = {
+            tokenId: Date.now().toString(),
+            imageUrl: imageUrl,
+            x: x,
+            y: y,
+            width: 100,
+            height: 100,
+            rotation: 0,
+            movableByPlayers: false,
+            name: 'New Token'
+          };
 
-        // Add token to the scene
-        currentScene.tokens.push(token);
-        // Save the scene on the server
-        socket.emit('addToken', { sceneId: currentScene.sceneId, token: token });
-        // Render the token
-        renderToken(token);
-      })
-      .catch(error => {
-        console.error('Error uploading token image:', error);
-      });
+          // Add token to the scene
+          currentScene.tokens.push(token);
+          // Save the scene on the server
+          socket.emit('addToken', { sceneId: currentScene.sceneId, token: token });
+          // Render the token
+          renderToken(token);
+        })
+        .catch(error => {
+          console.error('Error uploading token image:', error);
+        });
     }
   });
 
   // Handle scene creation
-  document.getElementById('create-scene-button').addEventListener('click', function() {
+  document.getElementById('create-scene-button').addEventListener('click', function () {
     const sceneNameInput = document.getElementById('scene-name-input');
     const sceneName = sceneNameInput.value.trim();
     if (sceneName) {
@@ -88,17 +88,17 @@ document.addEventListener('DOMContentLoaded', function() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sceneName })
       })
-      .then(response => response.json())
-      .then(data => {
-        const sceneId = data.sceneId;
-        // Load the new scene
-        loadScene(sceneId);
-        // Update scene selection dropdown
-        fetchSceneList();
-      })
-      .catch(error => {
-        console.error('Error creating scene:', error);
-      });
+        .then(response => response.json())
+        .then(data => {
+          const sceneId = data.sceneId;
+          // Load the new scene
+          loadScene(sceneId);
+          // Update scene selection dropdown
+          fetchSceneList();
+        })
+        .catch(error => {
+          console.error('Error creating scene:', error);
+        });
     } else {
       alert('Please enter a scene name.');
     }
@@ -111,10 +111,10 @@ document.addEventListener('DOMContentLoaded', function() {
       .then(data => {
         const sceneSelect = document.getElementById('scene-select');
         sceneSelect.innerHTML = ''; // Clear existing options
-        data.sceneIds.forEach(sceneId => {
+        data.scenes.forEach(scene => {
           const option = document.createElement('option');
-          option.value = sceneId;
-          option.textContent = `Scene ${sceneId}`;
+          option.value = scene.sceneId;
+          option.textContent = scene.sceneName; // Use the scene name here
           sceneSelect.appendChild(option);
         });
       })
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // Handle scene switching
-  document.getElementById('switch-scene-button').addEventListener('click', function() {
+  document.getElementById('switch-scene-button').addEventListener('click', function () {
     const sceneSelect = document.getElementById('scene-select');
     const selectedSceneId = sceneSelect.value;
     if (selectedSceneId) {

@@ -211,10 +211,40 @@ app.get('/scenes', (req, res) => {
       return res.status(500).send('Error reading scenes directory.');
     }
 
-    // Filter out non-.json files and map to scene IDs
-    const sceneIds = files.filter(file => file.endsWith('.json')).map(file => file.replace('.json', ''));
+    // Filter out non-.json files
+    const sceneFiles = files.filter(file => file.endsWith('.json'));
 
-    res.json({ sceneIds });
+    // If there are no scenes, return an empty array
+    if (sceneFiles.length === 0) {
+      return res.json({ scenes: [] });
+    }
+
+    const scenes = []; // Array to hold scene info
+    let filesProcessed = 0;
+
+    sceneFiles.forEach(file => {
+      const filePath = path.join(__dirname, 'data', 'scenes', file);
+
+      fs.readFile(filePath, 'utf8', (err, data) => {
+        filesProcessed++;
+        if (err) {
+          console.error('Error reading scene file:', err);
+          // Optionally, handle error or skip this file
+        } else {
+          try {
+            const scene = JSON.parse(data);
+            scenes.push({ sceneId: scene.sceneId, sceneName: scene.sceneName });
+          } catch (parseErr) {
+            console.error('Error parsing scene file:', parseErr);
+          }
+        }
+
+        // Once all files have been processed, send the response
+        if (filesProcessed === sceneFiles.length) {
+          res.json({ scenes });
+        }
+      });
+    });
   });
 });
 
