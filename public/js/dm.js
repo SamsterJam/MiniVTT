@@ -81,60 +81,71 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Handle scene creation
   document.getElementById('create-scene-button').addEventListener('click', function () {
-    const sceneNameInput = document.getElementById('scene-name-input');
-    const sceneName = sceneNameInput.value.trim();
-    if (sceneName) {
-      fetch('/createScene', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sceneName })
-      })
-        .then(response => response.json())
-        .then(data => {
-          const sceneId = data.sceneId;
-          // Load the new scene
-          loadScene(sceneId);
-          // Update scene selection dropdown
-          fetchSceneList();
-        })
-        .catch(error => {
-          console.error('Error creating scene:', error);
-        });
-    } else {
-      alert('Please enter a scene name.');
+    const sceneName = prompt('Enter a name for the new scene:');
+
+    // Check if the user canceled the prompt or entered an empty name
+    if (sceneName === null || sceneName.trim() === '') {
+      // Exit the function if the prompt was canceled or the name is empty
+      return;
     }
+
+    // Proceed with scene creation if a valid name is provided
+    fetch('/createScene', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sceneName })
+    })
+      .then(response => response.json())
+      .then(data => {
+        const sceneId = data.sceneId;
+        // Load the new scene
+        loadScene(sceneId);
+        // Update scene buttons
+        fetchSceneList();
+      })
+      .catch(error => {
+        console.error('Error creating scene:', error);
+      });
   });
 
-  // Fetch the list of scenes and populate the dropdown
+  // Fetch the list of scenes and populate the scene buttons
   function fetchSceneList() {
     fetch('/scenes')
       .then(response => response.json())
       .then(data => {
-        const sceneSelect = document.getElementById('scene-select');
-        sceneSelect.innerHTML = ''; // Clear existing options
+        const sceneButtonsContainer = document.getElementById('scene-buttons-container');
+        sceneButtonsContainer.innerHTML = ''; // Clear existing buttons
         data.scenes.forEach(scene => {
-          const option = document.createElement('option');
-          option.value = scene.sceneId;
-          option.textContent = scene.sceneName; // Use the scene name here
-          sceneSelect.appendChild(option);
+          const button = document.createElement('button');
+          button.className = 'scene-button';
+          button.textContent = scene.sceneName;
+          button.dataset.sceneId = scene.sceneId;
+          button.addEventListener('click', function () {
+            // Notify the server to change the active scene
+            socket.emit('changeScene', { sceneId: scene.sceneId });
+            // Load the selected scene
+            loadScene(scene.sceneId);
+
+            // Update the active class on buttons
+            const buttons = document.querySelectorAll('.scene-button');
+            buttons.forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+          });
+          sceneButtonsContainer.appendChild(button);
         });
+
+        // Update active scene button
+        if (currentScene) {
+          const activeButton = document.querySelector(`.scene-button[data-scene-id="${currentScene.sceneId}"]`);
+          if (activeButton) {
+            activeButton.classList.add('active');
+          }
+        }
       })
       .catch(error => {
         console.error('Error fetching scene list:', error);
       });
   }
-
-  // Handle scene switching
-  document.getElementById('switch-scene-button').addEventListener('click', function () {
-    const sceneSelect = document.getElementById('scene-select');
-    const selectedSceneId = sceneSelect.value;
-    if (selectedSceneId) {
-      // Notify the server to change the active scene
-      socket.emit('changeScene', { sceneId: selectedSceneId });
-      // Load the selected scene
-      loadScene(selectedSceneId);
-    }
-  });
 
   // Function to load a scene
   function loadScene(sceneId) {
@@ -145,6 +156,14 @@ document.addEventListener('DOMContentLoaded', function () {
   socket.on('sceneData', (scene) => {
     currentScene = scene;
     renderScene(scene);
+
+    // Update active scene button
+    const buttons = document.querySelectorAll('.scene-button');
+    buttons.forEach(btn => btn.classList.remove('active'));
+    const activeButton = document.querySelector(`.scene-button[data-scene-id="${scene.sceneId}"]`);
+    if (activeButton) {
+      activeButton.classList.add('active');
+    }
   });
 
   // Function to render a scene
@@ -223,10 +242,10 @@ document.addEventListener('DOMContentLoaded', function () {
       .on('resizemove', onTokenResizeMove);
 
 
-      // Add blue border if the token is movable by players
-      if (token.movableByPlayers) {
-        img.style.border = '2px dashed blue';
-      }
+    // Add blue border if the token is movable by players
+    if (token.movableByPlayers) {
+      img.style.border = '2px dashed blue';
+    }
   }
 
   // Unselect token when clicking on the scene background
@@ -265,7 +284,7 @@ document.addEventListener('DOMContentLoaded', function () {
         // Clear selectedTokenId
         selectedTokenId = null;
       }
-    } else if (event.key === 'i'){
+    } else if (event.key === 'i') {
       // Toggle 'movableByPlayers' property
       toggleTokenMovableByPlayers(selectedTokenId);
     }
@@ -350,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const token = currentScene.tokens.find(t => t.tokenId === tokenId);
     if (token) {
       token.movableByPlayers = !token.movableByPlayers;
-  
+
       // Update the token's visual representation
       const img = document.getElementById(`token-${tokenId}`);
       if (img) {
@@ -360,7 +379,7 @@ document.addEventListener('DOMContentLoaded', function () {
           img.style.border = '';
         }
       }
-  
+
       // Send update to server
       socket.emit('updateToken', {
         sceneId: currentScene.sceneId,

@@ -1,51 +1,120 @@
-<!-- dm.html -->
-
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta charset="UTF-8">
   <title>VTT - Dungeon Master</title>
   <!-- Include CSS -->
   <link rel="stylesheet" href="/css/styles.css">
   <style>
-    #scene-container.dragover {
-      border-color: #00f;
-      background-color: rgba(0, 0, 255, 0.1);
+    #toolbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 10px;
+      display: flex;
+      align-items: center;
+      box-sizing: border-box;
+      z-index: 100;
     }
-    #scene-container {
-      background-color: #dddddd;
+
+    #toolbar input {
+      padding: 5px;
+      margin-right: 10px;
+      border: 1px solid #555;
+      border-radius: 3px;
+      background-color: #3c3c3c;
+      color: #fff;
+      max-width: 200px;
     }
-    .token {
-      cursor: move;
+
+    #toolbar button {
+      padding: 5px 10px;
+      border: none;
+      border-radius: 3px;
+      background-color: rgb(255,255,255,0.1);
+      backdrop-filter: blur(16zpx);
+      color: #fff;
+      cursor: pointer;
+      margin-right: 10px;
     }
+
+    #toolbar button:hover {
+      background-color: rgb(255,255,255,0.2);
+    }
+
+    #scene-buttons-container {
+      display: flex;
+      overflow-x: auto;
+      flex: 1;
+      scrollbar-width: thin;
+      scrollbar-color: #444 transparent;
+    }
+
+    #scene-buttons-container::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    #scene-buttons-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    #scene-buttons-container::-webkit-scrollbar-thumb {
+      background-color: #444;
+      border-radius: 3px;
+    }
+
+    .scene-button {
+      background-color: #3c3c3c;
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      padding: 5px 10px;
+      margin-right: 5px;
+      cursor: pointer;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .scene-button.active {
+      background-color: #007bff;
+    }
+
+    .scene-button:hover {
+      background-color: #505050;
+    }
+
     .instructions {
       text-align: center;
       color: #888;
-      margin-top: 50px;
-    }
-    #toolbar {
-      position: absolute;
-      top: 10;
-      left: 0;
-      z-index: 100;
+      flex-direction: column;
     }
   </style>
 </head>
+
 <body>
   <div id="toolbar">
-    <!-- Toolbar elements -->
     <!-- Create Scene -->
-    <input type="text" id="scene-name-input" placeholder="Scene Name">
-    <button id="create-scene-button">Create Scene</button>
+    <button id="create-scene-button" style="background-color: rgb(200,255,200,0.2); margin-right: 10px;" onmouseover="this.style.backgroundColor='rgb(200,255,200,0.3)'" onmouseout="this.style.backgroundColor='rgb(200,255,200,0.2)'">Create Scene</button>
 
-    <!-- Switch Scenes -->
-    <select id="scene-select"></select>
-    <button id="switch-scene-button">Switch Scene</button>
+    <!-- Short little vertical line seperator -->
+    <div style="height: 20px; width: 1px; background-color: #555; margin-right: 10px;"></div>
+
+    <!-- Scene Buttons -->
+    <div id="scene-buttons-container">
+      <!-- Scene buttons will be dynamically added here -->
+    </div>
   </div>
 
   <div id="scene-container">
     <!-- Scene canvas -->
-    <p class="instructions">Drag and drop images here to add tokens to your scene.</p>
+    <div class="instructions">
+      <p>Create or select a scene, then drag and drop images here to add tokens to your scene.</p>
+      <p>- Delete token with [DEL]</p>
+      <p>- Toggle token to be interactable by players with [i]</p>
+      <p>- Delete Scene with [Shift+D]</p>
+    </div>
   </div>
 
   <!-- Include scripts at the end of the body -->
@@ -56,4 +125,5 @@
   <!-- DM script -->
   <script src="/js/dm.js"></script>
 </body>
+
 </html>
