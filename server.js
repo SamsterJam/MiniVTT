@@ -35,7 +35,6 @@ server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
-
 // Scene management
 let activeSceneId = null;
 let scenes = {};  // Key: sceneId, Value: scene object
@@ -71,8 +70,6 @@ io.on('connection', (socket) => {
     io.emit('activeSceneId', activeSceneId);
   });
 
-  // Additional event handlers will be added here...
-
   // Client updates a token (move, resize, rotate)
   socket.on('updateToken', ({ sceneId, tokenId, properties }) => {
     const scene = scenes[sceneId];
@@ -82,8 +79,8 @@ io.on('connection', (socket) => {
         // Update token properties
         Object.assign(token, properties);
 
-        // Save the scene
-        saveScene(scene);
+        // Mark the scene as dirty
+        scene.dirty = true;
 
         // Broadcast the update to other clients
         socket.broadcast.emit('updateToken', { sceneId, tokenId, properties });
@@ -97,8 +94,8 @@ io.on('connection', (socket) => {
     if (scene) {
       scene.tokens.push(token);
 
-      // Save the scene
-      saveScene(scene);
+      // Mark the scene as dirty
+      scene.dirty = true;
 
       // Broadcast the new token to all clients
       io.emit('addToken', { sceneId, token });
@@ -111,8 +108,8 @@ io.on('connection', (socket) => {
     if (scene) {
       scene.tokens = scene.tokens.filter(t => t.tokenId !== tokenId);
 
-      // Save the scene
-      saveScene(scene);
+      // Mark the scene as dirty
+      scene.dirty = true;
 
       // Broadcast the token removal to all clients
       io.emit('removeToken', { sceneId, tokenId });
@@ -123,6 +120,18 @@ io.on('connection', (socket) => {
     console.log('A user disconnected');
   });
 });
+
+// Periodically save dirty scenes
+const SAVE_INTERVAL = 1000; // milliseconds
+
+setInterval(() => {
+  Object.values(scenes).forEach(scene => {
+    if (scene.dirty) {
+      saveScene(scene);
+      scene.dirty = false; // Reset the dirty flag
+    }
+  });
+}, SAVE_INTERVAL);
 
 // Route for DM interface
 app.get('/dm', (req, res) => {
@@ -141,7 +150,6 @@ app.post('/upload', upload.single('image'), (req, res) => {
   // Return the file path to the client
   res.json({ imageUrl: `/uploads/${req.file.filename}` });
 });
-
 
 // Function to save a scene object to a file
 function saveScene(scene) {
@@ -188,7 +196,7 @@ app.post('/createScene', express.json(), async (req, res) => {
     tokens: []
   };
 
-  // Save the new scene
+  // Save the new scene immediately
   await saveScene(newScene);
   scenes[sceneId] = newScene;
 
@@ -209,4 +217,25 @@ app.get('/scenes', (req, res) => {
 
     res.json({ sceneIds });
   });
+});
+
+// Route to update scene properties (e.g., background image)
+app.post('/updateScene', express.json(), async (req, res) => {
+  const { scene } = req.body;
+  const sceneId = scene.sceneId;
+
+  if (!scenes[sceneId]) {
+    scenes[sceneId] = scene;
+  } else {
+    // Update existing scene properties
+    Object.assign(scenes[sceneId], scene);
+  }
+
+  // Mark the scene as dirty
+  scenes[sceneId].dirty = true;
+
+  // Optionally, save the scene immediately or rely on periodic saving
+  // await saveScene(scenes[sceneId]);
+
+  res.json({ message: 'Scene updated.' });
 });
