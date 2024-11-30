@@ -4,6 +4,7 @@ const path = require('path');
 const socketIo = require('socket.io');
 const multer = require('multer');
 const fs = require('fs');
+const fsPromises = fs.promises; // Use promises for async/await
 
 const app = express();
 const server = http.createServer(app);
@@ -103,16 +104,38 @@ io.on('connection', (socket) => {
   });
 
   // DM removes a token
-  socket.on('removeToken', ({ sceneId, tokenId }) => {
+  socket.on('removeToken', async ({ sceneId, tokenId }) => {
     const scene = scenes[sceneId];
     if (scene) {
-      scene.tokens = scene.tokens.filter(t => t.tokenId !== tokenId);
+      // Find the token before removing it
+      const tokenIndex = scene.tokens.findIndex(t => t.tokenId === tokenId);
+      if (tokenIndex !== -1) {
+        const token = scene.tokens[tokenIndex];
+        const imageUrl = token.imageUrl;
 
-      // Mark the scene as dirty
-      scene.dirty = true;
+        // Remove the token
+        scene.tokens.splice(tokenIndex, 1);
 
-      // Broadcast the token removal to all clients
-      io.emit('removeToken', { sceneId, tokenId });
+        // Mark the scene as dirty
+        scene.dirty = true;
+
+        // Check if the image is used elsewhere
+        const imageUsedElsewhere = await isImageUsedElsewhere(imageUrl);
+
+        // If not used elsewhere, delete the image file
+        if (!imageUsedElsewhere) {
+          const imagePath = path.join(__dirname, 'public', imageUrl);
+          try {
+            await fsPromises.unlink(imagePath);
+            console.log('Deleted unused image file:', imagePath);
+          } catch (err) {
+            console.error('Error deleting image file:', err);
+          }
+        }
+
+        // Broadcast the token removal to all clients
+        io.emit('removeToken', { sceneId, tokenId });
+      }
     }
   });
 
@@ -268,3 +291,80 @@ app.post('/updateScene', express.json(), async (req, res) => {
 
   res.json({ message: 'Scene updated.' });
 });
+
+// Route to delete a scene
+app.post('/deleteScene', express.json(), async (req, res) => {
+  const { sceneId } = req.body;
+  if (scenes[sceneId]) {
+    const scene = scenes[sceneId];
+    // Get list of imageUrls in this scene
+    const imageUrls = scene.tokens.map(token => token.imageUrl);
+
+    try {
+      // Delete the scene file from the filesystem
+      const filePath = path.join(__dirname, 'data', 'scenes', `${sceneId}.json`);
+      await fsPromises.unlink(filePath);
+
+      // Remove the scene from the in-memory object
+      delete scenes[sceneId];
+
+      // For each imageUrl, check if it's used elsewhere
+      for (const imageUrl of imageUrls) {
+        const imageUsedElsewhere = await isImageUsedElsewhere(imageUrl);
+
+        if (!imageUsedElsewhere) {
+          const imagePath = path.join(__dirname, 'public', imageUrl);
+          try {
+            await fsPromises.unlink(imagePath);
+            console.log('Deleted unused image file:', imagePath);
+          } catch (err) {
+            console.error('Error deleting image file:', err);
+          }
+        }
+      }
+
+      res.json({ success: true });
+      // Emit an event to update other connected clients
+      io.emit('sceneDeleted', { sceneId });
+
+    } catch (err) {
+      console.error('Error deleting scene file:', err);
+      res.json({ success: false, message: 'Error deleting scene file.' });
+    }
+
+  } else {
+    res.json({ success: false, message: 'Scene not found.' });
+  }
+});
+
+// Helper function to check if an image is used elsewhere
+async function isImageUsedElsewhere(imageUrl) {
+  const sceneFiles = await fsPromises.readdir(path.join(__dirname, 'data', 'scenes'));
+  for (const file of sceneFiles) {
+    if (file.endsWith('.json')) {
+      const sceneId = path.basename(file, '.json');
+      let scene;
+      try {
+        // If the scene is in memory, use that
+        if (scenes[sceneId]) {
+          scene = scenes[sceneId];
+        } else {
+          // Otherwise, read from file
+          const data = await fsPromises.readFile(path.join(__dirname, 'data', 'scenes', file), 'utf8');
+          scene = JSON.parse(data);
+        }
+
+        const tokens = scene.tokens || [];
+        for (const token of tokens) {
+          if (token.imageUrl === imageUrl) {
+            return true;  // Image is still used in this scene
+          }
+        }
+      } catch (err) {
+        console.error('Error reading or parsing scene file:', file, err);
+        // Continue to next file
+      }
+    }
+  }
+  return false;  // Image is not used in any other token in any scene
+}

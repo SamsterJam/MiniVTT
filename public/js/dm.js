@@ -287,6 +287,24 @@ document.addEventListener('DOMContentLoaded', function () {
     } else if (event.key === 'i') {
       // Toggle 'movableByPlayers' property
       toggleTokenMovableByPlayers(selectedTokenId);
+    } else if (event.key.toLowerCase() === 'h') {
+      toolbar = document.getElementById('toolbar');
+      if (toolbar.style.top === '0px' || toolbar.style.top === '') {
+        toolbar.style.top = '-50px'; // Adjust this value based on the toolbar height
+      } else {
+        toolbar.style.top = '0px';
+      }
+    } else if (event.shiftKey && event.key.toLowerCase() === 'd') {
+      // Shift + D pressed: Prompt to delete the current scene
+      if (currentScene) {
+        const confirmDelete = confirm('Are you sure you want to delete the current scene? This action cannot be undone.');
+        if (confirmDelete) {
+          // Proceed to delete the scene
+          deleteCurrentScene();
+        }
+      } else {
+        alert('No scene is currently loaded.');
+      }
     }
   });
 
@@ -389,6 +407,32 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+
+  function deleteCurrentScene() {
+    fetch('/deleteScene', {
+      method: 'POST', // Use 'DELETE' if your server supports it
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sceneId: currentScene.sceneId })
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Scene deleted successfully.');
+          // Clear the current scene and tokens
+          currentScene = null;
+          sceneContainer.innerHTML = '';
+          // Update the scene list
+          fetchSceneList();
+        } else {
+          alert('Failed to delete the scene.');
+        }
+      })
+      .catch(error => {
+        console.error('Error deleting scene:', error);
+        alert('An error occurred while deleting the scene.');
+      });
+  }
+
   // Handle token updates from the server
   socket.on('updateToken', ({ sceneId, tokenId, properties }) => {
     if (currentScene.sceneId !== sceneId) return;
@@ -437,6 +481,16 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+  socket.on('sceneDeleted', ({ sceneId }) => {
+    // If the current scene has been deleted, clear it from the UI
+    if (currentScene && currentScene.sceneId === sceneId) {
+      currentScene = null;
+      sceneContainer.innerHTML = '';
+    }
+    // Update the scene list
+    fetchSceneList();
+  });
+
   // Initial fetching of scene list
   fetchSceneList();
 });
@@ -444,27 +498,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
-const toolbar = document.getElementById('toolbar');
-
-document.addEventListener('keydown', (event) => {
-  if (event.key.toLowerCase() === 'h') { // Check if the 'H' key is pressed
-    if (toolbar.style.top === '0px' || toolbar.style.top === '') {
-      toolbar.style.top = '-50px'; // Adjust this value based on the toolbar height
-    } else {
-      toolbar.style.top = '0px';
-    }
-  }
-});
-
-
-
-
-
-
 
 
 // === Utility Functions ===
-
 
 
 // Function to extract the dominant color from an image
