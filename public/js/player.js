@@ -56,6 +56,7 @@ function renderScene(scene) {
 
 
 // Function to render a token
+// Function to render a token
 function renderToken(token) {
   const sceneContainer = document.getElementById('scene-container');
 
@@ -75,7 +76,22 @@ function renderToken(token) {
 
   // Make the token draggable if movableByPlayers is true
   if (token.movableByPlayers) {
-    interact(img)
+    setupDraggable(img, token.movableByPlayers);
+  }
+
+  // Add hover shadow effect
+  toggleHoverShadow(token.tokenId, token.movableByPlayers);
+
+  sceneContainer.appendChild(img);
+}
+
+// Function to setup draggable interaction
+function setupDraggable(element, enable) {
+  // Unset any existing interactions
+  interact(element).unset();
+
+  if (enable) {
+    interact(element)
       .draggable({
         onmove: onTokenDragMove,
         modifiers: [
@@ -93,22 +109,29 @@ function onTokenDragMove(event) {
   const target = event.target;
   const tokenId = target.dataset.tokenId;
 
-  const x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
-  const y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+  // Calculate new position
+  const deltaX = event.dx;
+  const deltaY = event.dy;
 
-  target.style.transform = `translate(${x}px, ${y}px)`;
+  // Update the actual position properties
+  const newLeft = (parseFloat(target.style.left) || 0) + deltaX;
+  const newTop = (parseFloat(target.style.top) || 0) + deltaY;
 
-  target.setAttribute('data-x', x);
-  target.setAttribute('data-y', y);
+  target.style.left = `${newLeft}px`;
+  target.style.top = `${newTop}px`;
 
   // Update token position in currentScene
   const token = currentScene.tokens.find(t => t.tokenId === tokenId);
   if (token) {
-    token.x += event.dx;
-    token.y += event.dy;
+    token.x = newLeft;
+    token.y = newTop;
 
     // Send update to server
-    socket.emit('updateToken', { sceneId: currentScene.sceneId, tokenId: tokenId, properties: { x: token.x, y: token.y } });
+    socket.emit('updateToken', {
+      sceneId: currentScene.sceneId,
+      tokenId: tokenId,
+      properties: { x: token.x, y: token.y }
+    });
   }
 }
 
@@ -129,7 +152,13 @@ socket.on('updateToken', ({ sceneId, tokenId, properties }) => {
       img.style.width = `${token.width}px`;
       img.style.height = `${token.height}px`;
       img.style.transform = `rotate(${token.rotation}deg)`;
+
+      // Setup draggable interaction
+      setupDraggable(img, token.movableByPlayers);
     }
+
+    // Update visual appearance of token if draggable to have hover shadow
+    toggleHoverShadow(tokenId, token.movableByPlayers);
   }
 });
 
@@ -212,4 +241,19 @@ function extractDominantColor(imageUrl) {
       reject("Image loading error");
     };
   });
+}
+
+
+// Function to enable or disable hover shadow on tokens
+function toggleHoverShadow(tokenId, enable) {
+  const img = document.getElementById(`token-${tokenId}`);
+  if (img) {
+    img.addEventListener('mouseenter', () => {
+      img.style.boxShadow = enable ? '0 0 16px 5px rgb(0,0,0,0.25)' : 'none';
+    });
+
+    img.addEventListener('mouseleave', () => {
+      img.style.boxShadow = 'none';
+    });
+  }
 }

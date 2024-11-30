@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function () {
             width: 100,
             height: 100,
             rotation: 0,
-            movableByPlayers: false,
+            movableByPlayers: false, // Add this line
             name: 'New Token'
           };
 
@@ -196,7 +196,6 @@ document.addEventListener('DOMContentLoaded', function () {
       if (selectedTokenId && selectedTokenId !== token.tokenId) {
         const prevSelectedImg = document.getElementById(`token-${selectedTokenId}`);
         if (prevSelectedImg) {
-          prevSelectedImg.style.border = ''; // Remove selection border
           prevSelectedImg.style.boxShadow = ''; // Remove shadow
         }
       }
@@ -222,6 +221,12 @@ document.addEventListener('DOMContentLoaded', function () {
         invert: 'none'
       })
       .on('resizemove', onTokenResizeMove);
+
+
+      // Add blue border if the token is movable by players
+      if (token.movableByPlayers) {
+        img.style.border = '2px dashed blue';
+      }
   }
 
   // Unselect token when clicking on the scene background
@@ -260,6 +265,9 @@ document.addEventListener('DOMContentLoaded', function () {
         // Clear selectedTokenId
         selectedTokenId = null;
       }
+    } else if (event.key === 'i'){
+      // Toggle 'movableByPlayers' property
+      toggleTokenMovableByPlayers(selectedTokenId);
     }
   });
 
@@ -338,6 +346,30 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  function toggleTokenMovableByPlayers(tokenId) {
+    const token = currentScene.tokens.find(t => t.tokenId === tokenId);
+    if (token) {
+      token.movableByPlayers = !token.movableByPlayers;
+  
+      // Update the token's visual representation
+      const img = document.getElementById(`token-${tokenId}`);
+      if (img) {
+        if (token.movableByPlayers) {
+          img.style.border = '2px dashed blue';
+        } else {
+          img.style.border = '';
+        }
+      }
+  
+      // Send update to server
+      socket.emit('updateToken', {
+        sceneId: currentScene.sceneId,
+        tokenId: tokenId,
+        properties: { movableByPlayers: token.movableByPlayers }
+      });
+    }
+  }
+
   // Handle token updates from the server
   socket.on('updateToken', ({ sceneId, tokenId, properties }) => {
     if (currentScene.sceneId !== sceneId) return;
@@ -355,6 +387,13 @@ document.addEventListener('DOMContentLoaded', function () {
         img.style.width = `${token.width}px`;
         img.style.height = `${token.height}px`;
         img.style.transform = `rotate(${token.rotation}deg)`;
+      }
+
+      // Update border based on 'movableByPlayers'
+      if (token.movableByPlayers) {
+        img.style.border = '2px solid blue';
+      } else {
+        img.style.border = '';
       }
     }
   });

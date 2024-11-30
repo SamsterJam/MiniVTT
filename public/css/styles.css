@@ -29,14 +29,9 @@ body {
   -khtml-user-drag: none;
   -moz-user-drag: none;
   -o-user-drag: none;
-  
+
 }
 
 .token {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.token:hover {
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-  transform: scale(1.05);
 }
