@@ -1,3 +1,5 @@
 public/uploads/*
+!public/uploads/.gitkeep
 data/scenes/*
+!data/scenes/.gitkeep
 node_modules/
