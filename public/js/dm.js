@@ -1,0 +1,304 @@
+document.addEventListener('DOMContentLoaded', function() {
+  const socket = io();
+
+  socket.on('connect', () => {
+    console.log('Connected to server');
+  });
+
+  let currentScene = null;
+
+  // Handle background image upload
+  document.getElementById('upload-background-button').addEventListener('click', function() {
+    if (!currentScene) {
+      alert('Please load or create a scene first.');
+      return;
+    }
+    const fileInput = document.getElementById('background-upload');
+    if (fileInput.files.length > 0) {
+      const formData = new FormData();
+      formData.append('image', fileInput.files[0]);
+
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        const imageUrl = data.imageUrl;
+        // Set the background image of the scene
+        currentScene.backgroundImage = imageUrl;
+        // Save the scene on the server
+        socket.emit('updateScene', { scene: currentScene });
+      })
+      .catch(error => {
+        console.error('Error uploading background image:', error);
+      });
+    }
+  });
+
+  // Handle token image upload
+  document.getElementById('upload-token-button').addEventListener('click', function() {
+
+    if (!currentScene) {
+      alert('Please load or create a scene first.');
+      return;
+    }
+    const fileInput = document.getElementById('token-upload');
+    if (fileInput.files.length > 0) {
+      const formData = new FormData();
+      formData.append('image', fileInput.files[0]);
+
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        const imageUrl = data.imageUrl;
+        // Create a new token
+        const token = {
+          tokenId: Date.now().toString(),
+          imageUrl: imageUrl,
+          x: 100,
+          y: 100,
+          width: 100,
+          height: 100,
+          rotation: 0,
+          movableByPlayers: false,
+          name: 'New Token'
+        };
+        // Add token to the scene
+        currentScene.tokens.push(token);
+        // Save the scene on the server
+        socket.emit('addToken', { sceneId: currentScene.sceneId, token: token });
+        // Render the token
+        renderToken(token);
+      })
+      .catch(error => {
+        console.error('Error uploading token image:', error);
+      });
+    }
+  });
+
+  // Handle scene creation
+  document.getElementById('create-scene-button').addEventListener('click', function() {
+    const sceneNameInput = document.getElementById('scene-name-input');
+    const sceneName = sceneNameInput.value.trim();
+    if (sceneName) {
+      fetch('/createScene', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sceneName })
+      })
+      .then(response => response.json())
+      .then(data => {
+        const sceneId = data.sceneId;
+        // Load the new scene
+        loadScene(sceneId);
+        // Update scene selection dropdown
+        fetchSceneList();
+      })
+      .catch(error => {
+        console.error('Error creating scene:', error);
+      });
+    } else {
+      alert('Please enter a scene name.');
+    }
+  });
+
+  // Fetch the list of scenes and populate the dropdown
+  function fetchSceneList() {
+    fetch('/scenes')
+      .then(response => response.json())
+      .then(data => {
+        const sceneSelect = document.getElementById('scene-select');
+        sceneSelect.innerHTML = ''; // Clear existing options
+        data.sceneIds.forEach(sceneId => {
+          const option = document.createElement('option');
+          option.value = sceneId;
+          option.textContent = `Scene ${sceneId}`;
+          sceneSelect.appendChild(option);
+        });
+      })
+      .catch(error => {
+        console.error('Error fetching scene list:', error);
+      });
+  }
+
+  // Handle scene switching
+  document.getElementById('switch-scene-button').addEventListener('click', function() {
+    const sceneSelect = document.getElementById('scene-select');
+    const selectedSceneId = sceneSelect.value;
+    if (selectedSceneId) {
+      // Notify the server to change the active scene
+      socket.emit('changeScene', { sceneId: selectedSceneId });
+      // Load the selected scene
+      loadScene(selectedSceneId);
+    }
+  });
+
+  // Function to load a scene
+  function loadScene(sceneId) {
+    socket.emit('loadScene', { sceneId: sceneId });
+  }
+
+  // Handle receiving scene data
+  socket.on('sceneData', (scene) => {
+    currentScene = scene;
+    renderScene(scene);
+  });
+
+  // Function to render a scene
+  function renderScene(scene) {
+    const sceneContainer = document.getElementById('scene-container');
+    sceneContainer.innerHTML = ''; // Clear existing content
+
+    // Set background image
+    if (scene.backgroundImage) {
+      sceneContainer.style.backgroundImage = `url(${scene.backgroundImage})`;
+      sceneContainer.style.backgroundSize = 'cover';
+    } else {
+      sceneContainer.style.backgroundImage = '';
+    }
+
+    // Render tokens
+    scene.tokens.forEach(token => {
+      renderToken(token);
+    });
+  }
+
+  // Function to render a token
+  function renderToken(token) {
+    const sceneContainer = document.getElementById('scene-container');
+
+    const img = document.createElement('img');
+    img.src = token.imageUrl;
+    img.id = `token-${token.tokenId}`;
+    img.className = 'token';
+    img.style.position = 'absolute';
+    img.style.left = `${token.x}px`;
+    img.style.top = `${token.y}px`;
+    img.style.width = `${token.width}px`;
+    img.style.height = `${token.height}px`;
+    img.style.transform = `rotate(${token.rotation}deg)`;
+    img.dataset.tokenId = token.tokenId;
+
+    sceneContainer.appendChild(img);
+
+    // Make the token draggable and resizable
+    interact(img)
+      .draggable({
+        onmove: onTokenDragMove,
+        modifiers: [
+          interact.modifiers.restrictRect({
+            restriction: sceneContainer,
+            endOnly: true
+          })
+        ]
+      })
+      .resizable({
+        edges: { left: true, right: true, bottom: true, top: true },
+        invert: 'none'
+      })
+      .on('resizemove', onTokenResizeMove);
+  }
+
+  // Event handler for token drag
+  function onTokenDragMove(event) {
+    const target = event.target;
+    const tokenId = target.dataset.tokenId;
+  
+    // Calculate new position
+    const deltaX = event.dx;
+    const deltaY = event.dy;
+    
+    // Update the actual position properties
+    const newLeft = (parseFloat(target.style.left) || 0) + deltaX;
+    const newTop = (parseFloat(target.style.top) || 0) + deltaY;
+    
+    target.style.left = `${newLeft}px`;
+    target.style.top = `${newTop}px`;
+  
+    // Update token position in currentScene
+    const token = currentScene.tokens.find(t => t.tokenId === tokenId);
+    if (token) {
+      token.x = newLeft;
+      token.y = newTop;
+  
+      // Send update to server
+      socket.emit('updateToken', {
+        sceneId: currentScene.sceneId,
+        tokenId: tokenId,
+        properties: { x: token.x, y: token.y }
+      });
+    }
+  }
+
+  // Event handler for token resize
+  function onTokenResizeMove(event) {
+    const target = event.target;
+    const tokenId = target.dataset.tokenId;
+  
+    let newWidth = event.rect.width;
+    let newHeight = event.rect.height;
+  
+    // Update the element's style
+    target.style.width = `${newWidth}px`;
+    target.style.height = `${newHeight}px`;
+  
+    // Optionally adjust position if needed
+    const deltaX = event.deltaRect.left;
+    const deltaY = event.deltaRect.top;
+  
+    const newLeft = (parseFloat(target.style.left) || 0) + deltaX;
+    const newTop = (parseFloat(target.style.top) || 0) + deltaY;
+  
+    target.style.left = `${newLeft}px`;
+    target.style.top = `${newTop}px`;
+  
+    // Update token size and position in currentScene
+    const token = currentScene.tokens.find(t => t.tokenId === tokenId);
+    if (token) {
+      token.x = newLeft;
+      token.y = newTop;
+      token.width = newWidth;
+      token.height = newHeight;
+  
+      // Send update to server
+      socket.emit('updateToken', {
+        sceneId: currentScene.sceneId,
+        tokenId: tokenId,
+        properties: {
+          x: token.x,
+          y: token.y,
+          width: token.width,
+          height: token.height
+        }
+      });
+    }
+  }
+
+  // Handle token updates from the server
+  socket.on('updateToken', ({ sceneId, tokenId, properties }) => {
+    if (currentScene.sceneId !== sceneId) return;
+  
+    const token = currentScene.tokens.find(t => t.tokenId === tokenId);
+    if (token) {
+      // Update token properties
+      Object.assign(token, properties);
+  
+      // Update the DOM element
+      const img = document.getElementById(`token-${tokenId}`);
+      if (img) {
+        img.style.left = `${token.x}px`;
+        img.style.top = `${token.y}px`;
+        img.style.width = `${token.width}px`;
+        img.style.height = `${token.height}px`;
+        img.style.transform = `rotate(${token.rotation}deg)`;
+      }
+    }
+  });
+
+  // Initial fetching of scene list
+  fetchSceneList();
+});

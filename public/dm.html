@@ -1,0 +1,45 @@
+<!-- dm.html -->
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>VTT - Dungeon Master</title>
+  <!-- Include CSS -->
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <h1>Dungeon Master Interface</h1>
+
+  <div id="toolbar">
+    <!-- Toolbar elements like upload button will go here -->
+    <!-- Create Scene -->
+    <input type="text" id="scene-name-input" placeholder="Scene Name">
+    <button id="create-scene-button">Create Scene</button>
+
+    <!-- Upload Background Image -->
+    <input type="file" id="background-upload" accept="image/*">
+    <button id="upload-background-button">Upload Background</button>
+
+    <!-- Upload Token Image -->
+    <input type="file" id="token-upload" accept="image/*">
+    <button id="upload-token-button">Upload Token</button>
+
+    <!-- Switch Scenes -->
+    <select id="scene-select"></select>
+    <button id="switch-scene-button">Switch Scene</button>
+  </div>
+
+  <div id="scene-container">
+    <!-- Scene canvas -->
+  </div>
+
+  <!-- Include scripts at the end of the body -->
+  <!-- Include Interact.js -->
+  <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+  <!-- Include Socket.io client -->
+  <script src="/socket.io/socket.io.js"></script>
+  <!-- DM script -->
+  <script src="/js/dm.js"></script>
+</body>
+</html>
