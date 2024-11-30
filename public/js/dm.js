@@ -148,12 +148,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Function to render a scene
   function renderScene(scene) {
+    const sceneContainer = document.getElementById('scene-container');
     sceneContainer.innerHTML = ''; // Clear existing content
 
     // Render tokens
     scene.tokens.forEach(token => {
       renderToken(token);
     });
+
+    // After rendering tokens, find the largest token by area
+    if (scene.tokens.length > 0) {
+      let largestToken = scene.tokens.reduce((prev, current) => {
+        return (prev.width * prev.height > current.width * current.height) ? prev : current;
+      });
+
+      // Extract the dominant color from the largest token's image
+      extractDominantColor(largestToken.imageUrl).then(color => {
+        // Set the background color of the scene container
+        sceneContainer.style.backgroundColor = color;
+      }).catch(err => {
+        console.error('Error extracting dominant color:', err);
+      });
+    }
   }
 
   // Function to render a token
@@ -289,3 +305,54 @@ document.addEventListener('DOMContentLoaded', function () {
   // Initial fetching of scene list
   fetchSceneList();
 });
+
+
+
+
+
+
+
+
+
+
+
+// === Utility Functions ===
+
+
+
+// Function to extract the dominant color from an image
+function extractDominantColor(imageUrl) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "Anonymous"; // This may be needed if images are served from a different origin
+    img.src = imageUrl;
+
+    img.onload = function () {
+      // Create a canvas to draw the image
+      const canvas = document.createElement('canvas');
+      canvas.width = 1; // Reduce size for performance
+      canvas.height = 1;
+
+      const ctx = canvas.getContext('2d');
+
+      // Draw the image scaled down to 1x1 pixel
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // Get the pixel data from the canvas
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+
+      // Extract the color from the single pixel
+      const [r, g, b] = data;
+
+      // Format the color as an RGB string
+      const dominantColor = `rgb(${r},${g},${b})`;
+
+      resolve(dominantColor);
+    };
+
+    img.onerror = function () {
+      reject("Image loading error");
+    };
+  });
+}

@@ -16,6 +16,8 @@ body {
   align-items: center;
   transition: background-color 0.5s ease;
 
+  background: none;
+
   /* disable selecting */
   user-select: none;
   -webkit-user-select: none;
