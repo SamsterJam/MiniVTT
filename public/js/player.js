@@ -33,13 +33,6 @@ function renderScene(scene) {
   const sceneContainer = document.getElementById('scene-container');
   sceneContainer.innerHTML = ''; // Clear existing content
 
-  // Set background image
-  if (scene.backgroundImage) {
-    sceneContainer.style.backgroundImage = `url(${scene.backgroundImage})`;
-  } else {
-    sceneContainer.style.backgroundImage = '';
-  }
-
   // Render tokens
   scene.tokens.forEach(token => {
     renderToken(token);

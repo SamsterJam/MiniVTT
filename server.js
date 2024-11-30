@@ -192,7 +192,6 @@ app.post('/createScene', express.json(), async (req, res) => {
   const newScene = {
     sceneId,
     sceneName,
-    backgroundImage: null,
     tokens: []
   };
 
@@ -219,7 +218,7 @@ app.get('/scenes', (req, res) => {
   });
 });
 
-// Route to update scene properties (e.g., background image)
+// Route to update scene properties
 app.post('/updateScene', express.json(), async (req, res) => {
   const { scene } = req.body;
   const sceneId = scene.sceneId;

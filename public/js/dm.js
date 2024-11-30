@@ -7,35 +7,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   let currentScene = null;
 
-  // Handle background image upload
-  document.getElementById('upload-background-button').addEventListener('click', function() {
-    if (!currentScene) {
-      alert('Please load or create a scene first.');
-      return;
-    }
-    const fileInput = document.getElementById('background-upload');
-    if (fileInput.files.length > 0) {
-      const formData = new FormData();
-      formData.append('image', fileInput.files[0]);
-
-      fetch('/upload', {
-        method: 'POST',
-        body: formData
-      })
-      .then(response => response.json())
-      .then(data => {
-        const imageUrl = data.imageUrl;
-        // Set the background image of the scene
-        currentScene.backgroundImage = imageUrl;
-        // Save the scene on the server
-        socket.emit('updateScene', { scene: currentScene });
-      })
-      .catch(error => {
-        console.error('Error uploading background image:', error);
-      });
-    }
-  });
-
   // Handle token image upload
   document.getElementById('upload-token-button').addEventListener('click', function() {
 
@@ -152,14 +123,6 @@ document.addEventListener('DOMContentLoaded', function() {
   function renderScene(scene) {
     const sceneContainer = document.getElementById('scene-container');
     sceneContainer.innerHTML = ''; // Clear existing content
-
-    // Set background image
-    if (scene.backgroundImage) {
-      sceneContainer.style.backgroundImage = `url(${scene.backgroundImage})`;
-      sceneContainer.style.backgroundSize = 'cover';
-    } else {
-      sceneContainer.style.backgroundImage = '';
-    }
 
     // Render tokens
     scene.tokens.forEach(token => {
