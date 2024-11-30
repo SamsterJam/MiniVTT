@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   let currentScene = null;
+  let selectedTokenId = null; // Variable to keep track of the selected token
 
   const sceneContainer = document.getElementById('scene-container');
 
@@ -188,6 +189,23 @@ document.addEventListener('DOMContentLoaded', function () {
 
     sceneContainer.appendChild(img);
 
+    // Add click event listener for token selection
+    img.addEventListener('click', function (event) {
+      event.stopPropagation(); // Prevent click from bubbling up to sceneContainer
+      // Unselect any previously selected token
+      if (selectedTokenId && selectedTokenId !== token.tokenId) {
+        const prevSelectedImg = document.getElementById(`token-${selectedTokenId}`);
+        if (prevSelectedImg) {
+          prevSelectedImg.style.border = ''; // Remove selection border
+          prevSelectedImg.style.boxShadow = ''; // Remove shadow
+        }
+      }
+      // Set this token as selected
+      selectedTokenId = token.tokenId;
+      // add shadow to selected token
+      img.style.boxShadow = '0px 0px 10px 3px #222222';
+    });
+
     // Make the token draggable and resizable
     interact(img)
       .draggable({
@@ -205,6 +223,45 @@ document.addEventListener('DOMContentLoaded', function () {
       })
       .on('resizemove', onTokenResizeMove);
   }
+
+  // Unselect token when clicking on the scene background
+  sceneContainer.addEventListener('click', function (event) {
+    // If clicked directly on the sceneContainer (not on any token)
+    if (event.target === sceneContainer) {
+      if (selectedTokenId) {
+        const prevSelectedImg = document.getElementById(`token-${selectedTokenId}`);
+        if (prevSelectedImg) {
+          prevSelectedImg.style.border = '';
+        }
+        selectedTokenId = null;
+      }
+    }
+  });
+
+  // Handle Delete key press to remove selected token
+  document.addEventListener('keydown', function (event) {
+    if (selectedTokenId && event.key === 'Delete') {
+      // Remove the selected token
+      const tokenIndex = currentScene.tokens.findIndex(t => t.tokenId === selectedTokenId);
+      if (tokenIndex !== -1) {
+        const token = currentScene.tokens[tokenIndex];
+        // Remove from currentScene.tokens
+        currentScene.tokens.splice(tokenIndex, 1);
+        // Remove from DOM
+        const img = document.getElementById(`token-${selectedTokenId}`);
+        if (img) {
+          sceneContainer.removeChild(img);
+        }
+        // Notify server
+        socket.emit('removeToken', {
+          sceneId: currentScene.sceneId,
+          tokenId: selectedTokenId
+        });
+        // Clear selectedTokenId
+        selectedTokenId = null;
+      }
+    }
+  });
 
   // Event handler for token drag
   function onTokenDragMove(event) {
@@ -298,6 +355,26 @@ document.addEventListener('DOMContentLoaded', function () {
         img.style.width = `${token.width}px`;
         img.style.height = `${token.height}px`;
         img.style.transform = `rotate(${token.rotation}deg)`;
+      }
+    }
+  });
+
+  // Handle token removal from the server
+  socket.on('removeToken', ({ sceneId, tokenId }) => {
+    if (currentScene.sceneId !== sceneId) return;
+
+    const tokenIndex = currentScene.tokens.findIndex(t => t.tokenId === tokenId);
+    if (tokenIndex !== -1) {
+      // Remove from currentScene.tokens
+      currentScene.tokens.splice(tokenIndex, 1);
+      // Remove from DOM
+      const img = document.getElementById(`token-${tokenId}`);
+      if (img && img.parentNode === sceneContainer) {
+        sceneContainer.removeChild(img);
+      }
+      // If the removed token was selected, unselect it
+      if (selectedTokenId === tokenId) {
+        selectedTokenId = null;
       }
     }
   });

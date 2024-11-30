@@ -6,8 +6,9 @@ socket.on('connect', () => {
   console.log('Connected to server');
 });
 
-
 let currentScene = null;
+
+const sceneContainer = document.getElementById('scene-container');
 
 
 // Receive active scene ID from server
@@ -30,7 +31,6 @@ socket.on('sceneData', (scene) => {
 
 // Function to render a scene
 function renderScene(scene) {
-  const sceneContainer = document.getElementById('scene-container');
   sceneContainer.innerHTML = ''; // Clear existing content
 
   // Render tokens
@@ -143,6 +143,21 @@ socket.on('addToken', ({ sceneId, token }) => {
   renderToken(token);
 });
 
+socket.on('removeToken', ({ sceneId, tokenId }) => {
+  console.log('removeToken', sceneId, tokenId);
+  if (currentScene.sceneId !== sceneId) return;
+
+  const tokenIndex = currentScene.tokens.findIndex(t => t.tokenId === tokenId);
+  if (tokenIndex !== -1) {
+    // Remove from currentScene.tokens
+    currentScene.tokens.splice(tokenIndex, 1);
+    // Remove from DOM
+    const img = document.getElementById(`token-${tokenId}`);
+    if (img && img.parentNode === sceneContainer) {
+      sceneContainer.removeChild(img);
+    }
+  }
+});
 
 
 
