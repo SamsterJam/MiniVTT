@@ -444,6 +444,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
+const toolbar = document.getElementById('toolbar');
+const toggleButton = document.getElementById('toggle-toolbar-button');
+
+toggleButton.addEventListener('click', () => {
+  if (toolbar.style.top === '0px' || toolbar.style.top === '') {
+    toolbar.style.top = '-50px'; // Adjust this value based on the toolbar height
+    toggleButton.textContent = 'Show';
+  } else {
+    toolbar.style.top = '0px';
+    toggleButton.textContent = 'Hide';
+  }
+});
+
+
+
 
 
 

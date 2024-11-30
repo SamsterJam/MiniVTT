@@ -1,0 +1,120 @@
+#toolbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  z-index: 100;
+  transition: top 0.3s;
+}
+
+#toolbar input {
+  padding: 5px;
+  margin-right: 10px;
+  border: 1px solid #555;
+  border-radius: 3px;
+  background-color: #3c3c3c;
+  color: #fff;
+  max-width: 200px;
+}
+
+#toolbar button {
+  padding: 5px 10px;
+  border: none;
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  color: #fff;
+  cursor: pointer;
+  margin-right: 10px;
+}
+
+#toolbar button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+#scene-buttons-container {
+  display: flex;
+  overflow-x: auto;
+  flex: 1;
+  scrollbar-width: thin;
+  scrollbar-color: #444 transparent;
+}
+
+#scene-buttons-container::-webkit-scrollbar {
+  height: 6px;
+}
+
+#scene-buttons-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#scene-buttons-container::-webkit-scrollbar-thumb {
+  background-color: #444;
+  border-radius: 3px;
+}
+
+.scene-button {
+  background-color: #3c3c3c;
+  color: #fff;
+  border: none;
+  border-radius: 3px;
+  padding: 5px 10px;
+  margin-right: 5px;
+  cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.scene-button.active {
+  background-color: #007bff;
+}
+
+.scene-button:hover {
+  background-color: #505050;
+}
+
+.instructions {
+  text-align: center;
+  color: #888;
+  display: flex;
+  flex-direction: column;
+}
+
+#toggle-toolbar-button {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 101;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  cursor: pointer;
+}
+
+#toggle-toolbar-button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Styling for the create scene button */
+#create-scene-button {
+  background-color: rgba(200, 255, 200, 0.2);
+  margin-right: 10px;
+}
+
+#create-scene-button:hover {
+  background-color: rgba(200, 255, 200, 0.3);
+}
+
+/* Separator styling */
+.separator {
+  height: 20px;
+  width: 1px;
+  background-color: #555;
+  margin-right: 10px;
+}
