@@ -126,8 +126,9 @@
   top: 50px; /* Adjust this value if your toolbar height is different */
   right: 0;
   width: 300px; /* Adjust the width as needed */
-  height: calc(100vh - 50px); /* Full height minus toolbar */
-  background-color: #222;
+  height: fit-content;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
   padding: 10px;
   color: #fff;
   overflow-y: auto;
@@ -155,5 +156,5 @@
 }
 
 #music-panel li:hover {
-  background-color: #333;
+  background-color: rgba(255, 255, 255, 0.2);
 }

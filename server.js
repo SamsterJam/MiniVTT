@@ -412,11 +412,11 @@ app.post('/uploadMusic', uploadMusic.single('music'), (req, res) => {
   // File information is available in req.file
   console.log(`Music uploaded: ${req.file.filename}`);
 
-  // Return the music URL to the client
+  // Return the music URL and filename to the client
   res.json({
     success: true,
     musicUrl: `/music/${req.file.filename}`,
-    filename: req.file.originalname
+    filename: req.file.filename
   });
 });
 
@@ -439,13 +439,44 @@ app.get('/musicList', (req, res) => {
         file.endsWith('.flac')
       );
     });
-    // Map the files to an array of { name: filename, url: '/music/filename' }
+    // Map the files to an array of { name: filename, filename: filename, url: '/music/filename' }
     const musicTracks = musicFiles.map(file => {
       return {
-        name: file,
+        name: file.replace(/^\d+\s*[-_]?\s*/, ''), // Process name if needed
+        filename: file,
         url: '/music/' + file
       };
     });
     res.json({ success: true, musicTracks });
+  });
+});
+
+// Route to delete music track
+app.post('/deleteMusic', express.json(), (req, res) => {
+  const { filename } = req.body;
+  if (!filename) {
+    return res.status(400).json({ success: false, message: 'No filename provided.' });
+  }
+
+  const musicDir = path.join(__dirname, 'public', 'music');
+  // Ensure the filename is safe (prevents directory traversal attacks)
+  const safeFilename = path.basename(filename);
+  const filePath = path.join(musicDir, safeFilename);
+
+  // Check if the file exists
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (err) {
+      console.error('Music file does not exist:', filePath);
+      return res.status(404).json({ success: false, message: 'File not found.' });
+    }
+    // Delete the file
+    fs.unlink(filePath, (err) => {
+      if (err) {
+        console.error('Error deleting music file:', err);
+        return res.status(500).json({ success: false, message: 'Error deleting file.' });
+      }
+      console.log('Deleted music file:', filePath);
+      res.json({ success: true });
+    });
   });
 });

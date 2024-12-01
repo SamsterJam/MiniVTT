@@ -37,8 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
           if (data.success) {
             const musicUrl = data.musicUrl;
             const filename = data.filename;
+            const displayName = data.displayName; // Optionally use a display name from the server
             // Add the music track to the MusicManager
-            musicManager.addMusicTrack(musicUrl, filename);
+            musicManager.addMusicTrack(musicUrl, filename, displayName);
           } else {
             alert('Music upload failed');
           }
@@ -76,7 +77,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.success) {
         // Add each track to the MusicManager
         data.musicTracks.forEach((track) => {
-          musicManager.addMusicTrack(track.url, track.name);
+          musicManager.addMusicTrack(track.url, track.filename, track.name);
         });
       } else {
         console.error('Error fetching music list:', data.message);
