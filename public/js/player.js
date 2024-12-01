@@ -58,7 +58,6 @@ function renderScene(scene) {
 
 
 // Function to render a token
-// Function to render a token
 function renderToken(token) {
   const sceneContainer = document.getElementById('scene-container');
 
@@ -73,6 +72,9 @@ function renderToken(token) {
   img.style.height = `${token.height}px`;
   img.style.transform = `rotate(${token.rotation}deg)`;
   img.dataset.tokenId = token.tokenId;
+  
+  // Disable default browser dragging
+  img.draggable = false;
 
   sceneContainer.appendChild(img);
 
@@ -83,8 +85,6 @@ function renderToken(token) {
 
   // Add hover shadow effect
   toggleHoverShadow(token.tokenId, token.movableByPlayers);
-
-  sceneContainer.appendChild(img);
 }
 
 // Function to setup draggable interaction
