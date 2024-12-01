@@ -118,3 +118,42 @@
   background-color: #555;
   margin-right: 10px;
 }
+
+
+
+#music-panel {
+  position: fixed;
+  top: 50px; /* Adjust this value if your toolbar height is different */
+  right: 0;
+  width: 300px; /* Adjust the width as needed */
+  height: calc(100vh - 50px); /* Full height minus toolbar */
+  background-color: #222;
+  padding: 10px;
+  color: #fff;
+  overflow-y: auto;
+  z-index: 100; /* Same z-index as toolbar */
+  transition: transform 0.3s ease;
+  transform: translateX(0); /* Visible by default */
+  z-index: 200;
+}
+
+/* Hidden state */
+#music-panel.hidden {
+  transform: translateX(100%); /* Slide out to the right when hidden */
+}
+
+/* Adjust the scene-container to avoid overlap if necessary */
+#scene-container {
+  margin-right: 300px; /* Same width as music panel */
+}
+
+/* Music tracks */
+#music-panel li {
+  padding: 5px;
+  border-bottom: 1px solid #444;
+  cursor: pointer;
+}
+
+#music-panel li:hover {
+  background-color: #333;
+}

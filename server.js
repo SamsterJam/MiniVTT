@@ -27,6 +27,26 @@ const storage = multer.diskStorage({
 // Initialize Multer
 const upload = multer({ storage: storage });
 
+
+
+// Define storage for music files using Multer
+const musicStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    let uploadMusicPath = 'public/music/';
+    // Create the directory if it doesn't exist
+    fs.mkdirSync(uploadMusicPath, { recursive: true });
+    cb(null, uploadMusicPath);
+  },
+  filename: function (req, file, cb) {
+    // Generate a unique filename
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+
+// Initialize Multer for music uploads
+const uploadMusic = multer({ storage: musicStorage });
+
+
 // Set up static file serving
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -137,6 +157,20 @@ io.on('connection', (socket) => {
         io.emit('removeToken', { sceneId, tokenId });
       }
     }
+  });
+
+  // Handle music control events from DM
+  socket.on('playMusic', (data) => {
+    // Broadcast to all other clients except the sender
+    socket.broadcast.emit('playMusic', data);
+  });
+
+  socket.on('pauseMusic', (data) => {
+    socket.broadcast.emit('pauseMusic', data);
+  });
+
+  socket.on('stopMusic', () => {
+    socket.broadcast.emit('stopMusic');
   });
 
   socket.on('disconnect', () => {
@@ -368,3 +402,50 @@ async function isImageUsedElsewhere(imageUrl) {
   }
   return false;  // Image is not used in any other token in any scene
 }
+
+// Route to handle music uploads
+app.post('/uploadMusic', uploadMusic.single('music'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No music file uploaded.' });
+  }
+
+  // File information is available in req.file
+  console.log(`Music uploaded: ${req.file.filename}`);
+
+  // Return the music URL to the client
+  res.json({
+    success: true,
+    musicUrl: `/music/${req.file.filename}`,
+    filename: req.file.originalname
+  });
+});
+
+
+// Route to get list of uploaded music tracks
+app.get('/musicList', (req, res) => {
+  const musicDir = path.join(__dirname, 'public', 'music');
+  fs.readdir(musicDir, (err, files) => {
+    if (err) {
+      console.error('Error reading music directory:', err);
+      return res.status(500).json({ success: false, message: 'Error reading music directory.' });
+    }
+    // Optionally filter for audio files only
+    const musicFiles = files.filter(file => {
+      return (
+        file.endsWith('.mp3') ||
+        file.endsWith('.wav') ||
+        file.endsWith('.ogg') ||
+        file.endsWith('.m4a') ||
+        file.endsWith('.flac')
+      );
+    });
+    // Map the files to an array of { name: filename, url: '/music/filename' }
+    const musicTracks = musicFiles.map(file => {
+      return {
+        name: file,
+        url: '/music/' + file
+      };
+    });
+    res.json({ success: true, musicTracks });
+  });
+});

@@ -24,14 +24,33 @@
     </div>
   </div>
 
+  <!-- Music Control Panel -->
+  <div id="music-panel">
+    <h3>Music Control</h3>
+    <!-- Music Upload -->
+    <input type="file" id="music-upload-input" accept="audio/*">
+    <button id="upload-music-button">Upload Music</button>
+
+    <!-- Music List -->
+    <ul id="music-list">
+      <!-- Music tracks will be dynamically added here -->
+    </ul>
+
+    <!-- Music Controls -->
+    <button id="play-music-button">Play</button>
+    <button id="pause-music-button">Pause</button>
+    <button id="stop-music-button">Stop</button>
+  </div>
+
   <div id="scene-container">
     <!-- Scene canvas -->
     <div class="instructions">
       <p>Create or select a scene, then drag and drop images here to add tokens to your scene.</p>
       <p>- Delete token with [DEL]</p>
       <p>- Toggle token to be interactable by players with [I]</p>
-      <p>- Toggle toolbar with [H]</p>
+      <p>- Toggle toolbar with [T]</p>
       <p>- Delete Scene with [Shift+D]</p>
+      <p>- Toggle Music bar with [M]</p>
     </div>
   </div>
 
@@ -40,7 +59,7 @@
   <!-- Include Socket.io client -->
   <script src="/socket.io/socket.io.js"></script>
   <!-- DM script -->
-  <script src="/js/dm.js"></script>
+  <script type="module" src="/js/dm.js"></script>
 
 </body>
 

@@ -10,6 +10,8 @@ let currentScene = null;
 
 const sceneContainer = document.getElementById('scene-container');
 
+// Get the audio element for music playback
+const audioElement = document.getElementById('background-music');
 
 // Receive active scene ID from server
 socket.on('activeSceneId', (sceneId) => {
@@ -257,3 +259,31 @@ function toggleHoverShadow(tokenId, enable) {
     });
   }
 }
+
+// Handle music control events
+socket.on('playMusic', (data) => {
+  audioElement.src = data.musicUrl;
+  audioElement.currentTime = data.currentTime;
+  audioElement.play();
+});
+
+socket.on('pauseMusic', (data) => {
+  audioElement.pause();
+  audioElement.currentTime = data.currentTime;
+});
+
+socket.on('stopMusic', () => {
+  audioElement.pause();
+  audioElement.currentTime = 0;
+});
+
+const enableAudioButton = document.getElementById('enable-audio-button');
+
+enableAudioButton.addEventListener('click', () => {
+  audioElement.play().then(() => {
+    audioElement.pause();
+    enableAudioButton.style.display = 'none';
+  }).catch((error) => {
+    console.error('Error enabling audio:', error);
+  });
+});
