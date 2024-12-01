@@ -17,9 +17,12 @@ export class MusicManager {
 
   // Method to add a music track
   addMusicTrack(musicUrl, name) {
+    // Process name to remove leading numbers and hyphens/underscores
+    const displayName = name.replace(/^\d+\s*[-_]?\s*/, '');
+
     const track = {
       url: musicUrl,
-      name: name,
+      name: displayName, // Use the processed display name
     };
     this.musicTracks.push(track);
     this.renderMusicList(); // Update the music list in the UI
