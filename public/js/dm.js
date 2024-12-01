@@ -17,40 +17,63 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Music Upload Elements
-  const musicUploadInput = document.getElementById('music-upload-input');
-  const uploadMusicButton = document.getElementById('upload-music-button');
+  // Music Upload Drop Area
+  const musicDropArea = document.getElementById('music-drop-area');
 
-  // Upload Music Event Listener
-  uploadMusicButton.addEventListener('click', () => {
-    const file = musicUploadInput.files[0];
-    if (file) {
-      const formData = new FormData();
-      formData.append('music', file);
-
-      fetch('/uploadMusic', {
-        method: 'POST',
-        body: formData,
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            const musicUrl = data.musicUrl;
-            const filename = data.filename;
-            const displayName = data.displayName; // Optionally use a display name from the server
-            // Add the music track to the MusicManager
-            musicManager.addMusicTrack(musicUrl, filename, displayName);
-          } else {
-            alert('Music upload failed');
-          }
-        })
-        .catch((error) => {
-          console.error('Error uploading music:', error);
-        });
-    } else {
-      alert('Please select a music file to upload');
-    }
+  // Drag and Drop Event Listeners
+  musicDropArea.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    musicDropArea.style.backgroundColor = '#f0f0f0'; // Optional: Visual feedback on drag enter
   });
+
+  musicDropArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+  });
+
+  musicDropArea.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    musicDropArea.style.backgroundColor = ''; // Optional: Reset visual feedback on drag leave
+  });
+
+  musicDropArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    musicDropArea.style.backgroundColor = ''; // Reset visual feedback on drop
+    const files = e.dataTransfer.files;
+    handleMusicFiles(files);
+  });
+
+  // Function to handle music files
+  function handleMusicFiles(files) {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (file && file.type.startsWith('audio/')) {
+        const formData = new FormData();
+        formData.append('music', file);
+
+        fetch('/uploadMusic', {
+          method: 'POST',
+          body: formData,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              const musicUrl = data.musicUrl;
+              const filename = data.filename;
+              const displayName = data.displayName; // Optionally use a display name from the server
+              // Add the music track to the MusicManager
+              musicManager.addMusicTrack(musicUrl, filename, displayName);
+            } else {
+              alert('Music upload failed');
+            }
+          })
+          .catch((error) => {
+            console.error('Error uploading music:', error);
+          });
+      } else {
+        alert('Please drop a valid audio file');
+      }
+    }
+  }
 
   // Music Control Buttons
   const playMusicButton = document.getElementById('play-music-button');

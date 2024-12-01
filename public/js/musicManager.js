@@ -12,6 +12,19 @@ export class MusicManager {
 
   init() {
     this.setupSocketListeners();
+
+    // Music control buttons
+    this.playMusicButton = document.getElementById('play-music-button');
+    this.pauseMusicButton = document.getElementById('pause-music-button');
+    this.stopMusicButton = document.getElementById('stop-music-button');
+    this.deleteMusicButton = document.getElementById('delete-music-button');
+
+    // Event listeners
+    this.playMusicButton.addEventListener('click', () => this.playMusic());
+    this.pauseMusicButton.addEventListener('click', () => this.pauseMusic());
+    this.stopMusicButton.addEventListener('click', () => this.stopMusic());
+    this.deleteMusicButton.addEventListener('click', () => this.deleteSelectedMusicTrack());
+
     // We will render the music list after tracks are added
   }
 
@@ -46,22 +59,10 @@ export class MusicManager {
 
       // Highlight the selected track
       if (this.currentMusicTrackIndex === index) {
-        li.classList.add('selected');
+        li.classList.add('selected-track');
       }
 
-      // Create delete button
-      const deleteButton = document.createElement('button');
-      deleteButton.textContent = 'Delete';
-      deleteButton.style.marginLeft = '10px';
-
-      // Event listener for deleting a music track
-      deleteButton.addEventListener('click', (event) => {
-        event.stopPropagation(); // Prevent the click from selecting the track
-        this.deleteMusicTrack(index);
-      });
-
       li.appendChild(trackNameSpan);
-      li.appendChild(deleteButton);
       musicListElement.appendChild(li);
     });
   }
@@ -116,6 +117,55 @@ export class MusicManager {
     }
   }
 
+  // Method to delete the selected music track
+  deleteSelectedMusicTrack() {
+    if (this.currentMusicTrackIndex != null) {
+      this.deleteMusicTrack(this.currentMusicTrackIndex);
+    } else {
+      alert('Please select a music track to delete');
+    }
+  }
+
+  // Method to delete a music track
+  deleteMusicTrack(index) {
+    const track = this.musicTracks[index];
+
+    // Confirm deletion
+    if (!confirm(`Are you sure you want to delete "${track.name}"?`)) {
+      return;
+    }
+
+    fetch('/deleteMusic', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ filename: track.filename }) // Send the filename to the server
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Remove the track from the array
+          this.musicTracks.splice(index, 1);
+
+          // If the deleted track was currently selected, reset currentMusicTrackIndex
+          if (this.currentMusicTrackIndex === index) {
+            this.currentMusicTrackIndex = null;
+            this.audioElement.pause();
+            this.audioElement.currentTime = 0;
+            this.audioElement.src = '';
+          }
+
+          this.renderMusicList(); // Update the music list
+        } else {
+          alert('Failed to delete music track.');
+        }
+      })
+      .catch(err => {
+        console.error('Error deleting music track:', err);
+      });
+  }
+
   // Socket event listeners
   setupSocketListeners() {
     // Music control events from the server
@@ -156,44 +206,5 @@ export class MusicManager {
   onStopMusic() {
     this.audioElement.pause();
     this.audioElement.currentTime = 0;
-  }
-
-  deleteMusicTrack(index) {
-    const track = this.musicTracks[index];
-  
-    // Confirm deletion
-    if (!confirm(`Are you sure you want to delete "${track.name}"?`)) {
-      return;
-    }
-  
-    fetch('/deleteMusic', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ filename: track.filename }) // Send the filename to the server
-    })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          // Remove the track from the array
-          this.musicTracks.splice(index, 1);
-  
-          // If the deleted track was currently selected, reset currentMusicTrackIndex
-          if (this.currentMusicTrackIndex === index) {
-            this.currentMusicTrackIndex = null;
-            this.audioElement.pause();
-            this.audioElement.currentTime = 0;
-            this.audioElement.src = '';
-          }
-  
-          this.renderMusicList(); // Update the music list
-        } else {
-          alert('Failed to delete music track.');
-        }
-      })
-      .catch(err => {
-        console.error('Error deleting music track:', err);
-      });
   }
 }

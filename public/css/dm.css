@@ -136,6 +136,8 @@
   transition: transform 0.3s ease;
   transform: translateX(0); /* Visible by default */
   z-index: 200;
+  border: white 1px solid;
+  border-radius: 10px 0 0 10px;
 }
 
 /* Hidden state */
@@ -157,4 +159,70 @@
 
 #music-panel li:hover {
   background-color: rgba(255, 255, 255, 0.2);
+}
+
+#music-panel button i {
+  font-size: 18px; /* Adjust icon size */
+}
+
+#music-panel button {
+  padding: 10px;
+  background-color: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+
+#music-panel button:hover {
+  color: #007bff;
+}
+
+
+/* Music Controls */
+#music-controls {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+#music-controls button i {
+  font-size: 18px; /* Adjust icon size */
+}
+
+#music-controls button {
+  padding: 10px;
+  margin: 0 5px; /* Add some margin between buttons */
+  background-color: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+}
+
+#music-controls button:hover {
+  color: #007bff;
+}
+
+#music-controls button:focus {
+  outline: none;
+}
+
+#music-list li.selected-track {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+#music-drop-area {
+  border: 2px dashed #ccc;
+  padding: 20px;
+  margin-bottom: 20px;
+  text-align: center;
+  transition: background-color 0.3s;
+}
+
+#music-drop-area:hover {
+  border-color: #aaa;
+  cursor: pointer;
+}
+
+#music-drop-area.dragover {
+  background-color: #f0f0f0;
 }

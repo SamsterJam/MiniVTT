@@ -6,6 +6,7 @@
   <title>VTT - Dungeon Master</title>
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="stylesheet" href="/css/dm.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 
 <body>
@@ -27,9 +28,10 @@
   <!-- Music Control Panel -->
   <div id="music-panel">
     <h3>Music Control</h3>
-    <!-- Music Upload -->
-    <input type="file" id="music-upload-input" accept="audio/*">
-    <button id="upload-music-button">Upload Music</button>
+    <!-- Music Upload via Drag and Drop -->
+    <div id="music-drop-area" style="border: 2px dashed #ccc; padding: 20px; margin-bottom: 20px; text-align: center;">
+      Drag and drop music files here to upload
+    </div>
 
     <!-- Music List -->
     <ul id="music-list">
@@ -37,9 +39,12 @@
     </ul>
 
     <!-- Music Controls -->
-    <button id="play-music-button">Play</button>
-    <button id="pause-music-button">Pause</button>
-    <button id="stop-music-button">Stop</button>
+    <div id="music-controls">
+      <button id="play-music-button"><i class="fas fa-play"></i></button>
+      <button id="pause-music-button"><i class="fas fa-pause"></i></button>
+      <button id="stop-music-button"><i class="fas fa-stop"></i></button>
+      <button id="delete-music-button"><i class="fas fa-trash-alt"></i></button>
+    </div>
   </div>
 
   <div id="scene-container">
