@@ -226,3 +226,13 @@
 #music-drop-area.dragover {
   background-color: #f0f0f0;
 }
+
+/* Add styles for the placeholder during drag */
+.scene-button.dragging {
+  opacity: 0.5;
+}
+
+.scene-button.placeholder {
+  background-color: #444;
+  border: 2px dashed #666;
+}

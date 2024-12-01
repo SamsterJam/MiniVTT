@@ -65,6 +65,7 @@ export class SceneManager {
   renderSceneButtons(scenes) {
     const sceneButtonsContainer = document.getElementById('scene-buttons-container');
     sceneButtonsContainer.innerHTML = ''; // Clear existing buttons
+
     scenes.forEach((scene) => {
       const button = document.createElement('button');
       button.className = 'scene-button';
@@ -81,6 +82,37 @@ export class SceneManager {
       if (activeButton) {
         activeButton.classList.add('active');
       }
+    }
+
+    // Initialize SortableJS on the scene-buttons-container
+    if (!this.sortableInitialized) {
+      this.sortable = new Sortable(sceneButtonsContainer, {
+        animation: 150,
+        onEnd: (evt) => {
+          // Get the new order of scene IDs
+          const sceneButtons = sceneButtonsContainer.querySelectorAll('.scene-button');
+          const newOrder = Array.from(sceneButtons).map(button => button.dataset.sceneId);
+
+          // Send the new order to the server
+          fetch('/updateSceneOrder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sceneOrder: newOrder }),
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (!data.success) {
+              console.error('Failed to update scene order on server:', data.message);
+            } else {
+              console.log('Scene order updated successfully');
+            }
+          })
+          .catch(error => {
+            console.error('Error updating scene order:', error);
+          });
+        },
+      });
+      this.sortableInitialized = true;
     }
   }
 
@@ -561,10 +593,10 @@ export class SceneManager {
       .then((response) => response.json())
       .then((data) => {
         const sceneId = data.sceneId;
+        // Optionally, fetch the updated scene list to include the new scene
+        this.fetchSceneList();
         // Load the new scene
         this.loadScene(sceneId);
-        // Update scene buttons
-        this.fetchSceneList();
       })
       .catch((error) => {
         console.error('Error creating scene:', error);

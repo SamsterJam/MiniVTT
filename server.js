@@ -7,6 +7,7 @@ const fs = require('fs');
 const fsPromises = fs.promises; // Use promises for async/await
 
 const app = express();
+app.use(express.json());
 const server = http.createServer(app);
 const io = socketIo(server);
 
@@ -290,7 +291,11 @@ app.get('/scenes', (req, res) => {
         } else {
           try {
             const scene = JSON.parse(data);
-            scenes.push({ sceneId: scene.sceneId, sceneName: scene.sceneName });
+            scenes.push({
+              sceneId: scene.sceneId,
+              sceneName: scene.sceneName,
+              order: scene.order // Include the order property
+            });
           } catch (parseErr) {
             console.error('Error parsing scene file:', parseErr);
           }
@@ -298,6 +303,8 @@ app.get('/scenes', (req, res) => {
 
         // Once all files have been processed, send the response
         if (filesProcessed === sceneFiles.length) {
+          // Sort scenes by the order property
+          scenes.sort((a, b) => a.order - b.order);
           res.json({ scenes });
         }
       });
@@ -480,3 +487,64 @@ app.post('/deleteMusic', express.json(), (req, res) => {
     });
   });
 });
+
+
+app.post('/updateSceneOrder', (req, res) => {
+  const newOrder = req.body.sceneOrder; // Array of scene IDs in new order
+
+  // Read all scene files and update their order
+  const updatePromises = newOrder.map((sceneId, index) => {
+    const filePath = path.join(__dirname, 'data', 'scenes', `${sceneId}.json`);
+    return new Promise((resolve, reject) => {
+      fs.readFile(filePath, 'utf8', (err, data) => {
+        if (err) {
+          console.error('Error reading scene file:', err);
+          return reject(err);
+        }
+
+        try {
+          const scene = JSON.parse(data);
+          scene.order = index; // Update the order property
+
+          fs.writeFile(filePath, JSON.stringify(scene, null, 2), (err) => {
+            if (err) {
+              console.error('Error writing scene file:', err);
+              return reject(err);
+            }
+            resolve();
+          });
+        } catch (parseErr) {
+          console.error('Error parsing scene file:', parseErr);
+          reject(parseErr);
+        }
+      });
+    });
+  });
+
+  Promise.all(updatePromises)
+    .then(() => {
+      res.json({ success: true });
+    })
+    .catch((error) => {
+      console.error('Error updating scene order:', error);
+      res.json({ success: false, message: 'Failed to update scene order' });
+    });
+});
+
+// Implement updateScenesOrder based on your data store
+function updateScenesOrder(newOrder) {
+  return new Promise((resolve, reject) => {
+    // Example for an in-memory array 'scenes'
+    newOrder.forEach((sceneId, index) => {
+      const scene = scenes.find(s => s.sceneId === sceneId);
+      if (scene) {
+        scene.order = index; // Update the order field
+      }
+    });
+
+    // TODO: Save changes to your data store (e.g., write to file or database)
+    saveScenes(scenes)
+      .then(resolve)
+      .catch(reject);
+  });
+}
