@@ -260,30 +260,61 @@ function toggleHoverShadow(tokenId, enable) {
   }
 }
 
-// Handle music control events
-socket.on('playMusic', (data) => {
-  audioElement.src = data.musicUrl;
-  audioElement.currentTime = data.currentTime;
-  audioElement.play();
-});
-
-socket.on('pauseMusic', (data) => {
-  audioElement.pause();
-  audioElement.currentTime = data.currentTime;
-});
-
-socket.on('stopMusic', () => {
-  audioElement.pause();
-  audioElement.currentTime = 0;
-});
+// Keep track of whether audio has been enabled by the user
+let audioEnabled = false;
+let currentMusicData = null; // Keep track of the current music data
 
 const enableAudioButton = document.getElementById('enable-audio-button');
 
-enableAudioButton.addEventListener('click', () => {
-  audioElement.play().then(() => {
+// Handle music control events
+socket.on('playMusic', (data) => {
+  currentMusicData = data;
+  audioElement.src = data.musicUrl;
+  audioElement.currentTime = data.currentTime;
+
+  if (audioEnabled) {
+    audioElement.play().catch((error) => {
+      console.error('Error playing audio:', error);
+      // Since audio is enabled, do not re-display the "Enable Audio" button
+      // Optionally, you can handle the error as needed
+    });
+  } else {
+    // Show the enable audio button if audio is not enabled
+    enableAudioButton.style.display = 'block';
+  }
+});
+
+socket.on('pauseMusic', (data) => {
+  currentMusicData = null; // No music is playing
+  if (audioEnabled) {
     audioElement.pause();
-    enableAudioButton.style.display = 'none';
-  }).catch((error) => {
-    console.error('Error enabling audio:', error);
-  });
+    audioElement.currentTime = data.currentTime;
+  }
+});
+
+socket.on('stopMusic', () => {
+  currentMusicData = null; // No music is playing
+  if (audioEnabled) {
+    audioElement.pause();
+    audioElement.currentTime = 0;
+  }
+});
+
+enableAudioButton.addEventListener('click', () => {
+  audioEnabled = true;
+  enableAudioButton.style.display = 'none';
+
+  // Attempt to play music if music data is available
+  if (currentMusicData) {
+    audioElement.src = currentMusicData.musicUrl;
+    audioElement.currentTime = currentMusicData.currentTime;
+    audioElement.play().catch((error) => {
+      console.error('Error playing audio after enabling:', error);
+      // Optionally, handle the error as needed
+    });
+  }
+});
+
+document.getElementById('enable-audio-button').addEventListener('click', function() {
+  document.getElementById('audio-overlay').style.display = 'none';
 });
