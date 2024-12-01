@@ -174,6 +174,12 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('stopMusic');
   });
 
+  // Handle volume change events from DM
+  socket.on('setVolume', (data) => {
+    // Broadcast to all other clients except the sender
+    socket.broadcast.emit('setVolume', data);
+  });
+
   socket.on('disconnect', () => {
     console.log('A user disconnected');
   });

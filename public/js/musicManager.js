@@ -7,6 +7,9 @@ export class MusicManager {
     this.currentMusicTrackIndex = null; // Index of the currently selected music track
     this.audioElement = new Audio(); // Audio element for music playback
 
+    // Initialize volume to 1.0 (100%)
+    this.audioElement.volume = 1.0;
+
     this.init();
   }
 
@@ -81,12 +84,15 @@ export class MusicManager {
 
   // Method to play music
   playMusic() {
+    // In playMusic() method
     if (this.currentMusicTrackIndex != null) {
       this.audioElement.play();
 
+      const track = this.musicTracks[this.currentMusicTrackIndex];
+
       // Notify players to play the music
       this.socket.emit('playMusic', {
-        musicUrl: this.audioElement.src,
+        musicUrl: track.url, // Use the relative path
         currentTime: this.audioElement.currentTime,
       });
     } else {
@@ -115,6 +121,14 @@ export class MusicManager {
       // Notify players to stop the music
       this.socket.emit('stopMusic');
     }
+  }
+
+  // Method to set volume
+  setVolume(volume) {
+    this.audioElement.volume = volume;
+
+    // Notify players to set volume
+    this.socket.emit('setVolume', { volume });
   }
 
   // Method to delete the selected music track
@@ -180,6 +194,9 @@ export class MusicManager {
     this.socket.on('stopMusic', () => {
       this.onStopMusic();
     });
+    this.socket.on('setVolume', (data) => {
+      this.onSetVolume(data.volume);
+    });
   }
 
   // Client-side handlers for music events (optional for DM)
@@ -207,4 +224,10 @@ export class MusicManager {
     this.audioElement.pause();
     this.audioElement.currentTime = 0;
   }
+
+  // Handler for setting the volume based on server data
+  onSetVolume(volume) {
+    this.audioElement.volume = volume;
+  }
+
 }

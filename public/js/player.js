@@ -269,17 +269,16 @@ const enableAudioButton = document.getElementById('enable-audio-button');
 // Handle music control events
 socket.on('playMusic', (data) => {
   currentMusicData = data;
-  audioElement.src = data.musicUrl;
-  audioElement.currentTime = data.currentTime;
 
   if (audioEnabled) {
+    if (audioElement.src !== data.musicUrl) {
+      audioElement.src = data.musicUrl;
+    }
+    audioElement.currentTime = data.currentTime || 0;
     audioElement.play().catch((error) => {
       console.error('Error playing audio:', error);
-      // Since audio is enabled, do not re-display the "Enable Audio" button
-      // Optionally, you can handle the error as needed
     });
   } else {
-    // Show the enable audio button if audio is not enabled
     enableAudioButton.style.display = 'block';
   }
 });
@@ -300,21 +299,32 @@ socket.on('stopMusic', () => {
   }
 });
 
+// Handle volume change events from the server
+socket.on('setVolume', (data) => {
+  audioElement.volume = data.volume;
+});
+
+
 enableAudioButton.addEventListener('click', () => {
   audioEnabled = true;
   enableAudioButton.style.display = 'none';
 
+  // Hide the audio overlay if applicable
+  const audioOverlay = document.getElementById('audio-overlay');
+  if (audioOverlay) {
+    audioOverlay.style.display = 'none';
+  }
+
   // Attempt to play music if music data is available
   if (currentMusicData) {
-    audioElement.src = currentMusicData.musicUrl;
-    audioElement.currentTime = currentMusicData.currentTime;
+    // Only set src if it's different
+    if (audioElement.src !== currentMusicData.musicUrl) {
+      audioElement.src = currentMusicData.musicUrl;
+    }
+    audioElement.currentTime = currentMusicData.currentTime || 0;
+
     audioElement.play().catch((error) => {
       console.error('Error playing audio after enabling:', error);
-      // Optionally, handle the error as needed
     });
   }
-});
-
-document.getElementById('enable-audio-button').addEventListener('click', function() {
-  document.getElementById('audio-overlay').style.display = 'none';
 });

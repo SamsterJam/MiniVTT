@@ -109,4 +109,15 @@ document.addEventListener('DOMContentLoaded', () => {
     .catch((error) => {
       console.error('Error fetching music list:', error);
     });
+
+
+  
+  // Volume Slider
+  const volumeSlider = document.getElementById('volume-slider');
+
+  // Add event listener for volume change
+  volumeSlider.addEventListener('input', () => {
+    const volume = volumeSlider.value / 100; // Normalize volume to 0.0 - 1.0
+    musicManager.setVolume(volume);
+  });
 });
