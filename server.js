@@ -26,7 +26,17 @@ const storage = multer.diskStorage({
 });
 
 // Initialize Multer
-const upload = multer({ storage: storage });
+const upload = multer({
+  storage: storage,
+  fileFilter: function (req, file, cb) {
+    const mimeType = file.mimetype;
+    if (mimeType.startsWith('image/') || mimeType.startsWith('video/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Unsupported file type'), false);
+    }
+  },
+});
 
 
 
@@ -203,16 +213,24 @@ app.get('/dm', (req, res) => {
 });
 
 // Route to handle image uploads
-app.post('/upload', upload.single('image'), (req, res) => {
+app.post('/upload', upload.single('file'), (req, res) => {
   if (!req.file) {
     return res.status(400).send('No file uploaded.');
   }
 
-  // File information is available in req.file
-  console.log(`File uploaded: ${req.file.filename}`);
+  // Determine the media type based on the MIME type
+  const mimeType = req.file.mimetype;
+  let mediaType = 'image';
+  if (mimeType.startsWith('video/')) {
+    mediaType = 'video';
+  } else if (mimeType.startsWith('image/')) {
+    mediaType = 'image';
+  } else {
+    return res.status(400).send('Unsupported file type.');
+  }
 
-  // Return the file path to the client
-  res.json({ imageUrl: `/uploads/${req.file.filename}` });
+  // Return the file path and media type to the client
+  res.json({ imageUrl: `/uploads/${req.file.filename}`, mediaType: mediaType });
 });
 
 // Function to save a scene object to a file

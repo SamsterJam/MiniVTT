@@ -40,47 +40,61 @@ function renderScene(scene) {
     renderToken(token);
   });
 
-  // After rendering tokens, find the largest token by area
-  if (scene.tokens.length > 0) {
-    let largestToken = scene.tokens.reduce((prev, current) => {
+  // After rendering tokens, find the largest image token by area
+  const imageTokens = scene.tokens.filter(token => token.mediaType !== 'video');
+
+  if (imageTokens.length > 0) {
+    let largestImageToken = imageTokens.reduce((prev, current) => {
       return (prev.width * prev.height > current.width * current.height) ? prev : current;
     });
 
-    // Extract the dominant color from the largest token's image
-    extractDominantColor(largestToken.imageUrl).then(color => {
+    // Extract the dominant color from the largest image token
+    extractDominantColor(largestImageToken.imageUrl).then(color => {
       // Set the background color of the scene container
       sceneContainer.style.backgroundColor = color;
     }).catch(err => {
       console.error('Error extracting dominant color:', err);
     });
+  } else {
+    // No image tokens found, set default background color
+    sceneContainer.style.backgroundColor = ''; // Or set a specific color
   }
 }
-
 
 // Function to render a token
 function renderToken(token) {
   const sceneContainer = document.getElementById('scene-container');
 
-  const img = document.createElement('img');
-  img.src = token.imageUrl;
-  img.id = `token-${token.tokenId}`;
-  img.className = 'token';
-  img.style.position = 'absolute';
-  img.style.left = `${token.x}px`;
-  img.style.top = `${token.y}px`;
-  img.style.width = `${token.width}px`;
-  img.style.height = `${token.height}px`;
-  img.style.transform = `rotate(${token.rotation}deg)`;
-  img.dataset.tokenId = token.tokenId;
-  
-  // Disable default browser dragging
-  img.draggable = false;
+  let element;
+  if (token.mediaType === 'video') {
+    element = document.createElement('video');
+    element.src = token.imageUrl;
+    element.autoplay = true;
+    element.loop = true;
+    element.muted = true; // Muted due to browser autoplay policies
+  } else {
+    element = document.createElement('img');
+    element.src = token.imageUrl;
+  }
 
-  sceneContainer.appendChild(img);
+  element.id = `token-${token.tokenId}`;
+  element.className = 'token';
+  element.style.position = 'absolute';
+  element.style.left = `${token.x}px`;
+  element.style.top = `${token.y}px`;
+  element.style.width = `${token.width}px`;
+  element.style.height = `${token.height}px`;
+  element.style.transform = `rotate(${token.rotation}deg)`;
+  element.dataset.tokenId = token.tokenId;
+
+  // Disable default browser dragging
+  element.draggable = false;
+
+  sceneContainer.appendChild(element);
 
   // Make the token draggable if movableByPlayers is true
   if (token.movableByPlayers) {
-    setupDraggable(img, token.movableByPlayers);
+    setupDraggable(element, token.movableByPlayers);
   }
 
   // Add hover shadow effect
@@ -147,16 +161,16 @@ socket.on('updateToken', ({ sceneId, tokenId, properties }) => {
     Object.assign(token, properties);
 
     // Update the DOM element
-    const img = document.getElementById(`token-${tokenId}`);
-    if (img) {
-      img.style.left = `${token.x}px`;
-      img.style.top = `${token.y}px`;
-      img.style.width = `${token.width}px`;
-      img.style.height = `${token.height}px`;
-      img.style.transform = `rotate(${token.rotation}deg)`;
+    const element = document.getElementById(`token-${tokenId}`);
+    if (element) {
+      element.style.left = `${token.x}px`;
+      element.style.top = `${token.y}px`;
+      element.style.width = `${token.width}px`;
+      element.style.height = `${token.height}px`;
+      element.style.transform = `rotate(${token.rotation}deg)`;
 
       // Setup draggable interaction
-      setupDraggable(img, token.movableByPlayers);
+      setupDraggable(element, token.movableByPlayers);
     }
 
     // Update visual appearance of token if draggable to have hover shadow
@@ -183,36 +197,20 @@ socket.on('removeToken', ({ sceneId, tokenId }) => {
     // Remove from currentScene.tokens
     currentScene.tokens.splice(tokenIndex, 1);
     // Remove from DOM
-    const img = document.getElementById(`token-${tokenId}`);
-    if (img && img.parentNode === sceneContainer) {
-      sceneContainer.removeChild(img);
+    const element = document.getElementById(`token-${tokenId}`);
+    if (element && element.parentNode === sceneContainer) {
+      sceneContainer.removeChild(element);
     }
   }
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // === Utility Functions ===
-
-
 
 // Function to extract the dominant color from an image
 function extractDominantColor(imageUrl) {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = "Anonymous"; // This may be needed if images are served from a different origin
+    img.crossOrigin = "Anonymous"; // May be needed if images are served from a different origin
     img.src = imageUrl;
 
     img.onload = function () {
@@ -245,17 +243,16 @@ function extractDominantColor(imageUrl) {
   });
 }
 
-
 // Function to enable or disable hover shadow on tokens
 function toggleHoverShadow(tokenId, enable) {
-  const img = document.getElementById(`token-${tokenId}`);
-  if (img) {
-    img.addEventListener('mouseenter', () => {
-      img.style.boxShadow = enable ? '0 0 16px 5px rgb(0,0,0,0.25)' : 'none';
+  const element = document.getElementById(`token-${tokenId}`);
+  if (element) {
+    element.addEventListener('mouseenter', () => {
+      element.style.boxShadow = enable ? '0 0 16px 5px rgba(0,0,0,0.25)' : 'none';
     });
 
-    img.addEventListener('mouseleave', () => {
-      img.style.boxShadow = 'none';
+    element.addEventListener('mouseleave', () => {
+      element.style.boxShadow = 'none';
     });
   }
 }
@@ -303,7 +300,6 @@ socket.on('stopMusic', () => {
 socket.on('setVolume', (data) => {
   audioElement.volume = data.volume;
 });
-
 
 enableAudioButton.addEventListener('click', () => {
   audioEnabled = true;

@@ -178,25 +178,37 @@ export class SceneManager {
   }
 
   renderToken(token) {
-    const img = document.createElement('img');
-    img.src = token.imageUrl;
-    img.id = `token-${token.tokenId}`;
-    img.className = 'token';
-    img.style.position = 'absolute';
-    img.style.left = `${token.x}px`;
-    img.style.top = `${token.y}px`;
-    img.style.width = `${token.width}px`;
-    img.style.height = `${token.height}px`;
-    img.style.transform = `rotate(${token.rotation}deg)`;
-    img.dataset.tokenId = token.tokenId;
+    let element;
 
-    this.sceneContainer.appendChild(img);
+    if (token.mediaType === 'video') {
+      element = document.createElement('video');
+      element.src = token.imageUrl;
+      element.autoplay = true;
+      element.loop = true;
+      element.muted = true; // Consider muting by default due to browser policies
+    } else {
+      element = document.createElement('img');
+      element.src = token.imageUrl;
+    }
+
+    // Common properties
+    element.id = `token-${token.tokenId}`;
+    element.className = 'token';
+    element.style.position = 'absolute';
+    element.style.left = `${token.x}px`;
+    element.style.top = `${token.y}px`;
+    element.style.width = `${token.width}px`;
+    element.style.height = `${token.height}px`;
+    element.style.transform = `rotate(${token.rotation}deg)`;
+    element.dataset.tokenId = token.tokenId;
+
+    this.sceneContainer.appendChild(element);
 
     // Add click event listener for token selection
-    img.addEventListener('click', (event) => this.onTokenClick(event, token.tokenId));
+    element.addEventListener('click', (event) => this.onTokenClick(event, token.tokenId));
 
     // Make the token draggable and resizable
-    interact(img)
+    interact(element)
       .draggable({
         onmove: (event) => this.onTokenDragMove(event),
         modifiers: [
@@ -211,11 +223,6 @@ export class SceneManager {
         invert: 'none',
       })
       .on('resizemove', (event) => this.onTokenResizeMove(event));
-
-    // Add blue border if the token is movable by players
-    if (token.movableByPlayers) {
-      img.style.border = '2px dashed blue';
-    }
   }
 
   onTokenClick(event, tokenId) {
@@ -508,7 +515,7 @@ export class SceneManager {
       const file = files[0];
 
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('file', file);
 
       fetch('/upload', {
         method: 'POST',
@@ -517,6 +524,8 @@ export class SceneManager {
         .then((response) => response.json())
         .then((data) => {
           const imageUrl = data.imageUrl;
+          const mediaType = data.mediaType;
+
           // Get the drop position relative to the scene container
           const rect = this.sceneContainer.getBoundingClientRect();
           const x = event.clientX - rect.left;
@@ -526,12 +535,13 @@ export class SceneManager {
           const token = {
             tokenId: Date.now().toString(),
             imageUrl: imageUrl,
+            mediaType: mediaType, // Include mediaType
             x: x,
             y: y,
             width: 100,
             height: 100,
             rotation: 0,
-            movableByPlayers: false, // Add this line
+            movableByPlayers: false,
             name: 'New Token',
           };
 
@@ -543,7 +553,7 @@ export class SceneManager {
           this.renderToken(token);
         })
         .catch((error) => {
-          console.error('Error uploading token image:', error);
+          console.error('Error uploading token file:', error);
         });
     }
   }
