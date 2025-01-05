@@ -1,9 +1,16 @@
+// public/js/sceneManager.js
+
+import { extractDominantColor } from './utils.js';
+
 export class SceneManager {
-  constructor(socket, sceneContainer) {
+  constructor(socket, sceneRenderer, tokenManager, sceneContainer) {
     this.socket = socket;
+    this.sceneRenderer = sceneRenderer;
+    this.tokenManager = tokenManager;
     this.sceneContainer = sceneContainer;
     this.currentScene = null;
     this.selectedTokenId = null;
+    this.sortableInitialized = false;
 
     this.init();
   }
@@ -99,17 +106,17 @@ export class SceneManager {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sceneOrder: newOrder }),
           })
-          .then(response => response.json())
-          .then(data => {
-            if (!data.success) {
-              console.error('Failed to update scene order on server:', data.message);
-            } else {
-              console.log('Scene order updated successfully');
-            }
-          })
-          .catch(error => {
-            console.error('Error updating scene order:', error);
-          });
+            .then(response => response.json())
+            .then(data => {
+              if (!data.success) {
+                console.error('Failed to update scene order on server:', data.message);
+              } else {
+                console.log('Scene order updated successfully');
+              }
+            })
+            .catch(error => {
+              console.error('Error updating scene order:', error);
+            });
         },
       });
       this.sortableInitialized = true;
@@ -149,105 +156,48 @@ export class SceneManager {
   }
 
   renderScene(scene) {
-    this.sceneContainer.innerHTML = ''; // Clear existing content
+    this.sceneRenderer.renderScene(scene);
 
-    // Render tokens
+    // After rendering tokens, setup interactions
     scene.tokens.forEach((token) => {
-      this.renderToken(token);
+      this.tokenManager.setupTokenInteractions(token);
+
+      // Additional DM-specific interactions
+      const element = document.getElementById(`token-${token.tokenId}`);
+      if (element) {
+        // Add click event listener for token selection
+        element.addEventListener('click', (event) => this.onTokenClick(event, token.tokenId));
+      }
     });
 
-    // After rendering tokens, find the largest token by area
-    if (scene.tokens.length > 0) {
-      let largestToken = scene.tokens.reduce((prev, current) => {
-        return prev.width * prev.height > current.width * current.height ? prev : current;
-      });
-
-      // Extract the dominant color from the largest token's image
-      this.extractDominantColor(largestToken.imageUrl)
-        .then((color) => {
-          // Set the background color of the scene container
-          this.sceneContainer.style.backgroundColor = color;
-        })
-        .catch((err) => {
-          console.error('Error extracting dominant color:', err);
-        });
-    } else {
-      // If there are no tokens, reset the background color
-      this.sceneContainer.style.backgroundColor = '';
-    }
-  }
-
-  renderToken(token) {
-    let element;
-
-    if (token.mediaType === 'video') {
-      element = document.createElement('video');
-      element.src = token.imageUrl;
-      element.autoplay = true;
-      element.loop = true;
-      element.muted = true; // Consider muting by default due to browser policies
-    } else {
-      element = document.createElement('img');
-      element.src = token.imageUrl;
-    }
-
-    // Common properties
-    element.id = `token-${token.tokenId}`;
-    element.className = 'token';
-    element.style.position = 'absolute';
-    element.style.left = `${token.x}px`;
-    element.style.top = `${token.y}px`;
-    element.style.width = `${token.width}px`;
-    element.style.height = `${token.height}px`;
-    element.style.transform = `rotate(${token.rotation}deg)`;
-    element.dataset.tokenId = token.tokenId;
-
-    this.sceneContainer.appendChild(element);
-
-    // Add click event listener for token selection
-    element.addEventListener('click', (event) => this.onTokenClick(event, token.tokenId));
-
-    // Make the token draggable and resizable
-    interact(element)
-      .draggable({
-        onmove: (event) => this.onTokenDragMove(event),
-        modifiers: [
-          interact.modifiers.restrictRect({
-            restriction: this.sceneContainer,
-            endOnly: true,
-          }),
-        ],
-      })
-      .resizable({
-        edges: { left: true, right: true, bottom: true, top: true },
-        invert: 'none',
-      })
-      .on('resizemove', (event) => this.onTokenResizeMove(event));
+    // Update the background color based on tokens
+    this.sceneRenderer.setBackgroundBasedOnTokens();
   }
 
   onTokenClick(event, tokenId) {
     event.stopPropagation(); // Prevent click from bubbling up to sceneContainer
-    // Unselect any previously selected token
+
+    // Unselect previous token
     if (this.selectedTokenId && this.selectedTokenId !== tokenId) {
-      const prevSelectedImg = document.getElementById(`token-${this.selectedTokenId}`);
-      if (prevSelectedImg) {
-        prevSelectedImg.style.boxShadow = ''; // Remove shadow
+      const prevSelectedElement = document.getElementById(`token-${this.selectedTokenId}`);
+      if (prevSelectedElement) {
+        prevSelectedElement.style.boxShadow = '';
       }
     }
-    // Set this token as selected
+
+    // Set the new selected token
     this.selectedTokenId = tokenId;
-    const img = event.currentTarget;
-    // Add shadow to selected token
-    img.style.boxShadow = '0px 0px 10px 3px #222222';
+    const element = event.currentTarget;
+    element.style.boxShadow = '0px 0px 10px 3px #222222';
   }
 
   onSceneClick(event) {
     // If clicked directly on the sceneContainer (not on any token)
     if (event.target === this.sceneContainer) {
       if (this.selectedTokenId) {
-        const prevSelectedImg = document.getElementById(`token-${this.selectedTokenId}`);
-        if (prevSelectedImg) {
-          prevSelectedImg.style.boxShadow = ''; // Remove shadow
+        const prevSelectedElement = document.getElementById(`token-${this.selectedTokenId}`);
+        if (prevSelectedElement) {
+          prevSelectedElement.style.boxShadow = '';
         }
         this.selectedTokenId = null;
       }
@@ -257,13 +207,14 @@ export class SceneManager {
   onKeyDown(event) {
     if (this.selectedTokenId && event.key === 'Delete') {
       this.deleteSelectedToken();
-    } else if (this.selectedTokenId && event.key === 'i') {
+    } else if (this.selectedTokenId && event.key.toLowerCase() === 'i') {
       // Toggle 'movableByPlayers' property
       this.toggleTokenMovableByPlayers(this.selectedTokenId);
     } else if (event.key.toLowerCase() === 't') {
       // Toggle toolbar visibility
       this.toggleToolbar();
     } else if (event.key.toLowerCase() === 'm') {
+      // Toggle music panel visibility
       const musicPanel = document.getElementById('music-panel');
       musicPanel.classList.toggle('hidden');
     } else if (event.shiftKey && event.key.toLowerCase() === 'd') {
@@ -297,9 +248,9 @@ export class SceneManager {
       // Remove from currentScene.tokens
       this.currentScene.tokens.splice(tokenIndex, 1);
       // Remove from DOM
-      const img = document.getElementById(`token-${this.selectedTokenId}`);
-      if (img) {
-        this.sceneContainer.removeChild(img);
+      const element = document.getElementById(`token-${this.selectedTokenId}`);
+      if (element) {
+        this.sceneContainer.removeChild(element);
       }
       // Notify server
       this.socket.emit('removeToken', {
@@ -311,91 +262,18 @@ export class SceneManager {
     }
   }
 
-  onTokenDragMove(event) {
-    const target = event.target;
-    const tokenId = target.dataset.tokenId;
-
-    // Calculate new position
-    const deltaX = event.dx;
-    const deltaY = event.dy;
-
-    // Update the actual position properties
-    const newLeft = (parseFloat(target.style.left) || 0) + deltaX;
-    const newTop = (parseFloat(target.style.top) || 0) + deltaY;
-
-    target.style.left = `${newLeft}px`;
-    target.style.top = `${newTop}px`;
-
-    // Update token position in currentScene
-    const token = this.currentScene.tokens.find((t) => t.tokenId === tokenId);
-    if (token) {
-      token.x = newLeft;
-      token.y = newTop;
-
-      // Send update to server
-      this.socket.emit('updateToken', {
-        sceneId: this.currentScene.sceneId,
-        tokenId: tokenId,
-        properties: { x: token.x, y: token.y },
-      });
-    }
-  }
-
-  onTokenResizeMove(event) {
-    const target = event.target;
-    const tokenId = target.dataset.tokenId;
-
-    let newWidth = event.rect.width;
-    let newHeight = event.rect.height;
-
-    // Update the element's style
-    target.style.width = `${newWidth}px`;
-    target.style.height = `${newHeight}px`;
-
-    // Optionally adjust position if needed
-    const deltaX = event.deltaRect.left;
-    const deltaY = event.deltaRect.top;
-
-    const newLeft = (parseFloat(target.style.left) || 0) + deltaX;
-    const newTop = (parseFloat(target.style.top) || 0) + deltaY;
-
-    target.style.left = `${newLeft}px`;
-    target.style.top = `${newTop}px`;
-
-    // Update token size and position in currentScene
-    const token = this.currentScene.tokens.find((t) => t.tokenId === tokenId);
-    if (token) {
-      token.x = newLeft;
-      token.y = newTop;
-      token.width = newWidth;
-      token.height = newHeight;
-
-      // Send update to server
-      this.socket.emit('updateToken', {
-        sceneId: this.currentScene.sceneId,
-        tokenId: tokenId,
-        properties: {
-          x: token.x,
-          y: token.y,
-          width: token.width,
-          height: token.height,
-        },
-      });
-    }
-  }
-
   toggleTokenMovableByPlayers(tokenId) {
     const token = this.currentScene.tokens.find((t) => t.tokenId === tokenId);
     if (token) {
       token.movableByPlayers = !token.movableByPlayers;
 
       // Update the token's visual representation
-      const img = document.getElementById(`token-${tokenId}`);
-      if (img) {
+      const element = document.getElementById(`token-${tokenId}`);
+      if (element) {
         if (token.movableByPlayers) {
-          img.style.border = '2px dashed blue';
+          element.style.border = '2px dashed blue';
         } else {
-          img.style.border = '';
+          element.style.border = '';
         }
       }
 
@@ -410,7 +288,7 @@ export class SceneManager {
 
   deleteCurrentScene() {
     fetch('/deleteScene', {
-      method: 'POST', // Use 'DELETE' if your server supports it
+      method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ sceneId: this.currentScene.sceneId }),
     })
@@ -442,21 +320,10 @@ export class SceneManager {
       Object.assign(token, properties);
 
       // Update the DOM element
-      const img = document.getElementById(`token-${tokenId}`);
-      if (img) {
-        img.style.left = `${token.x}px`;
-        img.style.top = `${token.y}px`;
-        img.style.width = `${token.width}px`;
-        img.style.height = `${token.height}px`;
-        img.style.transform = `rotate(${token.rotation}deg)`;
+      this.sceneRenderer.updateTokenElement(token);
 
-        // Update border based on 'movableByPlayers'
-        if (token.movableByPlayers) {
-          img.style.border = '2px dashed blue';
-        } else {
-          img.style.border = '';
-        }
-      }
+      // Update interactions
+      this.tokenManager.setupTokenInteractions(token);
     }
   }
 
@@ -468,9 +335,9 @@ export class SceneManager {
       // Remove from currentScene.tokens
       this.currentScene.tokens.splice(tokenIndex, 1);
       // Remove from DOM
-      const img = document.getElementById(`token-${tokenId}`);
-      if (img && img.parentNode === this.sceneContainer) {
-        this.sceneContainer.removeChild(img);
+      const element = document.getElementById(`token-${tokenId}`);
+      if (element && element.parentNode === this.sceneContainer) {
+        this.sceneContainer.removeChild(element);
       }
       // If the removed token was selected, unselect it
       if (this.selectedTokenId === tokenId) {
@@ -528,12 +395,13 @@ export class SceneManager {
 
           // Get the drop position relative to the scene container
           const rect = this.sceneContainer.getBoundingClientRect();
-          const x = event.clientX - rect.left;
-          const y = event.clientY - rect.top;
+          const x = (event.clientX - rect.left) / this.sceneRenderer.scale - this.sceneRenderer.offsetX;
+          const y = (event.clientY - rect.top) / this.sceneRenderer.scale - this.sceneRenderer.offsetY;
 
           // Create a new token
           const token = {
             tokenId: Date.now().toString(),
+            sceneId: this.currentScene.sceneId,
             imageUrl: imageUrl,
             mediaType: mediaType, // Include mediaType
             x: x,
@@ -550,48 +418,20 @@ export class SceneManager {
           // Save the scene on the server
           this.socket.emit('addToken', { sceneId: this.currentScene.sceneId, token: token });
           // Render the token
-          this.renderToken(token);
+          this.sceneRenderer.renderToken(token);
+          // Setup interactions
+          this.tokenManager.setupTokenInteractions(token);
+
+          // Add click event listener for token selection
+          const element = document.getElementById(`token-${token.tokenId}`);
+          if (element) {
+            element.addEventListener('click', (event) => this.onTokenClick(event, token.tokenId));
+          }
         })
         .catch((error) => {
           console.error('Error uploading token file:', error);
         });
     }
-  }
-
-  extractDominantColor(imageUrl) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'Anonymous'; // This may be needed if images are served from a different origin
-      img.src = imageUrl;
-
-      img.onload = function () {
-        // Create a canvas to draw the image
-        const canvas = document.createElement('canvas');
-        canvas.width = 1; // Reduce size for performance
-        canvas.height = 1;
-
-        const ctx = canvas.getContext('2d');
-
-        // Draw the image scaled down to 1x1 pixel
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-        // Get the pixel data from the canvas
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const data = imageData.data;
-
-        // Extract the color from the single pixel
-        const [r, g, b] = data;
-
-        // Format the color as an RGB string
-        const dominantColor = `rgb(${r},${g},${b})`;
-
-        resolve(dominantColor);
-      };
-
-      img.onerror = function () {
-        reject('Image loading error');
-      };
-    });
   }
 
   createScene(sceneName) {
@@ -603,7 +443,7 @@ export class SceneManager {
       .then((response) => response.json())
       .then((data) => {
         const sceneId = data.sceneId;
-        // Optionally, fetch the updated scene list to include the new scene
+        // Fetch the updated scene list to include the new scene
         this.fetchSceneList();
         // Load the new scene
         this.loadScene(sceneId);

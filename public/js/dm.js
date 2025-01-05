@@ -1,10 +1,18 @@
+// public/js/dm.js
+
 import { SceneManager } from './sceneManager.js';
-import { MusicManager } from './musicManager.js'; // Import MusicManager
+import { MusicManager } from './musicManager.js';
+import { SceneRenderer } from './sceneRenderer.js';
+import { PanZoomHandler } from './panZoomHandler.js';
+import { TokenManager } from './tokenManager.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const socket = io();
   const sceneContainer = document.getElementById('scene-container');
-  const sceneManager = new SceneManager(socket, sceneContainer);
+  const sceneRenderer = new SceneRenderer(sceneContainer);
+  const panZoomHandler = new PanZoomHandler(sceneContainer, sceneRenderer);
+  const tokenManager = new TokenManager(sceneRenderer, socket, true); // true indicates DM
+  const sceneManager = new SceneManager(socket, sceneRenderer, tokenManager, sceneContainer);
 
   // Instantiate MusicManager
   const musicManager = new MusicManager(socket);
