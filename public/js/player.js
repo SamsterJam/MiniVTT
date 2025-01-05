@@ -10,6 +10,101 @@ let currentScene = null;
 
 const sceneContainer = document.getElementById('scene-container');
 
+// Initialize variables for pan and zoom
+let scale = 1;
+let offsetX = 0;
+let offsetY = 0;
+
+// Function to update all token elements
+function updateAllTokenElements() {
+  if (!currentScene) return;
+  currentScene.tokens.forEach(token => {
+    updateTokenElement(token);
+  });
+}
+
+// Function to update a single token element's position and size
+function updateTokenElement(token) {
+  const element = document.getElementById(`token-${token.tokenId}`);
+  if (element) {
+    element.style.left = `${(token.x + offsetX) * scale}px`;
+    element.style.top = `${(token.y + offsetY) * scale}px`;
+    element.style.width = `${token.width * scale}px`;
+    element.style.height = `${token.height * scale}px`;
+    element.style.transform = `rotate(${token.rotation}deg)`;
+  }
+}
+
+// Zooming with mouse wheel
+sceneContainer.addEventListener('wheel', function(event) {
+  event.preventDefault();
+
+  const rect = sceneContainer.getBoundingClientRect();
+
+  const mouseX = event.clientX - rect.left;
+  const mouseY = event.clientY - rect.top;
+
+  // Calculate the mouse position in scene (world) coordinates before scaling
+  const mouseSceneX = (mouseX / scale) - offsetX;
+  const mouseSceneY = (mouseY / scale) - offsetY;
+
+  // Adjust the scale
+  const baseZoomIntensity = 0.0005; // Base zoom intensity
+  // Adjust intensity proportionally to current scale
+  const zoomIntensity = baseZoomIntensity * scale; // Multiply by scale
+
+  const delta = event.deltaY;
+  const zoom = Math.exp(-delta * zoomIntensity);
+
+  scale *= zoom;
+  // Limit to reasonable bounds
+  scale = Math.min(Math.max(scale, 0.1), 5);
+
+  // After adjusting the scale, recalculate the offsets so that the mouse scene position stays under the mouse pointer
+  offsetX = (mouseX / scale) - mouseSceneX;
+  offsetY = (mouseY / scale) - mouseSceneY;
+
+  // Update all token positions
+  updateAllTokenElements();
+}, { passive: false });
+
+// Panning with middle mouse button
+let isPanning = false;
+let startX = 0;
+let startY = 0;
+
+sceneContainer.addEventListener('mousedown', function(event) {
+  if (event.button === 1) { // Middle mouse button
+    isPanning = true;
+    startX = event.clientX;
+    startY = event.clientY;
+    event.preventDefault(); // Prevent default middle mouse behavior
+  }
+});
+
+document.addEventListener('mousemove', function(event) {
+  if (isPanning) {
+    const deltaX = (event.clientX - startX) / scale;
+    const deltaY = (event.clientY - startY) / scale;
+
+    offsetX += deltaX;
+    offsetY += deltaY;
+
+    startX = event.clientX;
+    startY = event.clientY;
+
+    // Update all token positions
+    updateAllTokenElements();
+  }
+});
+
+document.addEventListener('mouseup', function(event) {
+  if (event.button === 1 && isPanning) { // Middle mouse button
+    isPanning = false;
+    event.preventDefault();
+  }
+});
+
 // Get the audio element for music playback
 const audioElement = document.getElementById('background-music');
 
@@ -33,7 +128,8 @@ socket.on('sceneData', (scene) => {
 
 // Function to render a scene
 function renderScene(scene) {
-  sceneContainer.innerHTML = ''; // Clear existing content
+  // Clear existing content
+  sceneContainer.innerHTML = '';
 
   // Render tokens
   scene.tokens.forEach(token => {
@@ -59,12 +155,13 @@ function renderScene(scene) {
     // No image tokens found, set default background color
     sceneContainer.style.backgroundColor = ''; // Or set a specific color
   }
+
+  // Update all token elements to adjust for current scale and offsets
+  updateAllTokenElements();
 }
 
 // Function to render a token
 function renderToken(token) {
-  const sceneContainer = document.getElementById('scene-container');
-
   let element;
   if (token.mediaType === 'video') {
     element = document.createElement('video');
@@ -80,10 +177,12 @@ function renderToken(token) {
   element.id = `token-${token.tokenId}`;
   element.className = 'token';
   element.style.position = 'absolute';
-  element.style.left = `${token.x}px`;
-  element.style.top = `${token.y}px`;
-  element.style.width = `${token.width}px`;
-  element.style.height = `${token.height}px`;
+
+  // Calculate displayed positions and sizes
+  element.style.left = `${(token.x + offsetX) * scale}px`;
+  element.style.top = `${(token.y + offsetY) * scale}px`;
+  element.style.width = `${token.width * scale}px`;
+  element.style.height = `${token.height * scale}px`;
   element.style.transform = `rotate(${token.rotation}deg)`;
   element.dataset.tokenId = token.tokenId;
 
@@ -111,8 +210,9 @@ function setupDraggable(element, enable) {
       .draggable({
         onmove: onTokenDragMove,
         modifiers: [
+          // Restrict movement within the scene container
           interact.modifiers.restrictRect({
-            restriction: sceneContainer,
+            restriction: 'parent',
             endOnly: true
           })
         ]
@@ -125,22 +225,18 @@ function onTokenDragMove(event) {
   const target = event.target;
   const tokenId = target.dataset.tokenId;
 
-  // Calculate new position
-  const deltaX = event.dx;
-  const deltaY = event.dy;
+  // Calculate new position in base coordinates
+  const deltaX = event.dx / scale;
+  const deltaY = event.dy / scale;
 
-  // Update the actual position properties
-  const newLeft = (parseFloat(target.style.left) || 0) + deltaX;
-  const newTop = (parseFloat(target.style.top) || 0) + deltaY;
-
-  target.style.left = `${newLeft}px`;
-  target.style.top = `${newTop}px`;
-
-  // Update token position in currentScene
   const token = currentScene.tokens.find(t => t.tokenId === tokenId);
   if (token) {
-    token.x = newLeft;
-    token.y = newTop;
+    token.x += deltaX;
+    token.y += deltaY;
+
+    // Update element style
+    target.style.left = `${(token.x + offsetX) * scale}px`;
+    target.style.top = `${(token.y + offsetY) * scale}px`;
 
     // Send update to server
     socket.emit('updateToken', {
@@ -161,15 +257,11 @@ socket.on('updateToken', ({ sceneId, tokenId, properties }) => {
     Object.assign(token, properties);
 
     // Update the DOM element
+    updateTokenElement(token);
+
+    // Setup draggable interaction
     const element = document.getElementById(`token-${tokenId}`);
     if (element) {
-      element.style.left = `${token.x}px`;
-      element.style.top = `${token.y}px`;
-      element.style.width = `${token.width}px`;
-      element.style.height = `${token.height}px`;
-      element.style.transform = `rotate(${token.rotation}deg)`;
-
-      // Setup draggable interaction
       setupDraggable(element, token.movableByPlayers);
     }
 
