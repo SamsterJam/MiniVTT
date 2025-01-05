@@ -371,19 +371,19 @@ export class SceneManager {
   onDrop(event) {
     event.preventDefault();
     this.sceneContainer.classList.remove('dragover');
-
+  
     if (!this.currentScene) {
       alert('Please load or create a scene first.');
       return;
     }
-
+  
     const files = event.dataTransfer.files;
     if (files.length > 0) {
       const file = files[0];
-
+  
       const formData = new FormData();
       formData.append('file', file);
-
+  
       fetch('/upload', {
         method: 'POST',
         body: formData,
@@ -392,40 +392,110 @@ export class SceneManager {
         .then((data) => {
           const imageUrl = data.imageUrl;
           const mediaType = data.mediaType;
-
+  
           // Get the drop position relative to the scene container
           const rect = this.sceneContainer.getBoundingClientRect();
           const x = (event.clientX - rect.left) / this.sceneRenderer.scale - this.sceneRenderer.offsetX;
           const y = (event.clientY - rect.top) / this.sceneRenderer.scale - this.sceneRenderer.offsetY;
-
-          // Create a new token
-          const token = {
-            tokenId: Date.now().toString(),
-            sceneId: this.currentScene.sceneId,
-            imageUrl: imageUrl,
-            mediaType: mediaType, // Include mediaType
-            x: x,
-            y: y,
-            width: 100,
-            height: 100,
-            rotation: 0,
-            movableByPlayers: false,
-            name: 'New Token',
+  
+          let width, height;
+  
+          // Function to create the token after media dimensions are available
+          const createToken = () => {
+            // Create a new token
+            const token = {
+              tokenId: Date.now().toString(),
+              sceneId: this.currentScene.sceneId,
+              imageUrl: imageUrl,
+              mediaType: mediaType, // Include mediaType
+              x: x,
+              y: y,
+              width: width,
+              height: height,
+              rotation: 0,
+              movableByPlayers: false,
+              name: 'New Token',
+            };
+            
+            // Add token to the scene
+            this.currentScene.tokens.push(token);
+            // Save the scene on the server
+            this.socket.emit('addToken', { sceneId: this.currentScene.sceneId, token: token });
+            // Render the token
+            this.sceneRenderer.renderToken(token);
+            // Setup interactions
+            this.tokenManager.setupTokenInteractions(token);
+  
+            // Add click event listener for token selection
+            const element = document.getElementById(`token-${token.tokenId}`);
+            if (element) {
+              element.addEventListener('click', (event) => this.onTokenClick(event, token.tokenId));
+            }
           };
-
-          // Add token to the scene
-          this.currentScene.tokens.push(token);
-          // Save the scene on the server
-          this.socket.emit('addToken', { sceneId: this.currentScene.sceneId, token: token });
-          // Render the token
-          this.sceneRenderer.renderToken(token);
-          // Setup interactions
-          this.tokenManager.setupTokenInteractions(token);
-
-          // Add click event listener for token selection
-          const element = document.getElementById(`token-${token.tokenId}`);
-          if (element) {
-            element.addEventListener('click', (event) => this.onTokenClick(event, token.tokenId));
+  
+          // Load the image or video to get its dimensions
+          if (mediaType === 'video') {
+            const video = document.createElement('video');
+            video.src = imageUrl;
+            video.addEventListener('loadedmetadata', () => {
+              const videoWidth = video.videoWidth;
+              const videoHeight = video.videoHeight;
+  
+              const maxDimension = 200; // You can adjust this value
+              width = videoWidth;
+              height = videoHeight;
+  
+              // Scale dimensions if necessary
+              if (width > height) {
+                if (width > maxDimension) {
+                  const scale = maxDimension / width;
+                  width = maxDimension;
+                  height = height * scale;
+                }
+              } else {
+                if (height > maxDimension) {
+                  const scale = maxDimension / height;
+                  height = maxDimension;
+                  width = width * scale;
+                }
+              }
+  
+              createToken();
+            });
+            video.addEventListener('error', (error) => {
+              console.error('Error loading video:', error);
+            });
+          } else {
+            const image = new Image();
+            image.onload = () => {
+              const imageWidth = image.naturalWidth;
+              const imageHeight = image.naturalHeight;
+  
+              const maxDimension = 200; // You can adjust this value
+              width = imageWidth;
+              height = imageHeight;
+  
+              // Scale dimensions if necessary
+              if (width > height) {
+                if (width > maxDimension) {
+                  const scale = maxDimension / width;
+                  width = maxDimension;
+                  height = height * scale;
+                }
+              } else {
+                if (height > maxDimension) {
+                  const scale = maxDimension / height;
+                  height = maxDimension;
+                  width = width * scale;
+                }
+              }
+  
+              createToken();
+            };
+            image.onerror = (error) => {
+              console.error('Error loading image:', error);
+            };
+            image.src = imageUrl;
           }
         })
         .catch((error) => {

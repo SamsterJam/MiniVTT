@@ -32,7 +32,14 @@ export class TokenManager {
             edges: { left: true, right: true, bottom: true, top: true },
             invert: 'none',
           })
-          .on('resizemove', (event) => this.onResizeMove(event, token));
+          .on('resizestart', (event) => {
+            // Store the initial aspect ratio
+            const rect = event.rect;
+            token.initialAspectRatio = rect.width / rect.height;
+          })
+          .on('resizemove', (event) => {
+            this.onResizeMove(event, token);
+          });
       }
 
       // Add hover shadow effect
@@ -68,14 +75,28 @@ export class TokenManager {
   onResizeMove(event, token) {
     const target = event.target;
 
+    // Check if Shift key is pressed
+    const shiftKey = event.shiftKey;
+
     // Calculate new size in base coordinates
-    const deltaWidth = event.deltaRect.width / this.sceneRenderer.scale;
-    const deltaHeight = event.deltaRect.height / this.sceneRenderer.scale;
+    let deltaWidth = event.deltaRect.width / this.sceneRenderer.scale;
+    let deltaHeight = event.deltaRect.height / this.sceneRenderer.scale;
+
+    if (!shiftKey) {
+      // Preserve aspect ratio
+      const aspectRatio = token.initialAspectRatio;
+
+      if (Math.abs(deltaWidth) > Math.abs(deltaHeight)) {
+        deltaHeight = deltaWidth / aspectRatio;
+      } else {
+        deltaWidth = deltaHeight * aspectRatio;
+      }
+    }
 
     token.width += deltaWidth;
     token.height += deltaHeight;
 
-    // Optionally adjust position if needed
+    // Adjust position if needed
     const deltaX = event.deltaRect.left / this.sceneRenderer.scale;
     const deltaY = event.deltaRect.top / this.sceneRenderer.scale;
 
