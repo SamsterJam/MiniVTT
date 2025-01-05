@@ -10,10 +10,10 @@ export class TokenManager {
   setupTokenInteractions(token) {
     const element = document.getElementById(`token-${token.tokenId}`);
     if (!element) return;
-
+  
     // Unset any existing interactions
     interact(element).unset();
-
+  
     if (this.isDM || token.movableByPlayers) {
       interact(element)
         .draggable({
@@ -25,7 +25,7 @@ export class TokenManager {
             }),
           ],
         });
-
+  
       if (this.isDM) {
         interact(element)
           .resizable({
@@ -41,12 +41,20 @@ export class TokenManager {
             this.onResizeMove(event, token);
           });
       }
-
+  
       // Add hover shadow effect
       this.toggleHoverShadow(token, true);
     } else {
       // If interactions are not allowed, add hover effect without interactions
       this.toggleHoverShadow(token, false);
+    }
+  
+    if (this.isDM) {
+      if (token.movableByPlayers) {
+        element.style.border = '2px dashed blue';
+      } else {
+        element.style.border = '';
+      }
     }
   }
 

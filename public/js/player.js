@@ -37,12 +37,7 @@ function renderScene(scene) {
 
   // After rendering tokens, setup interactions
   scene.tokens.forEach((token) => {
-    if (token.movableByPlayers) {
-      tokenManager.setupTokenInteractions(token);
-    } else {
-      // Even if token is not movable, we may want to add hover effects
-      tokenManager.toggleHoverShadow(token, false);
-    }
+    tokenManager.setupTokenInteractions(token);
   });
 }
 
@@ -58,10 +53,8 @@ socket.on('updateToken', ({ sceneId, tokenId, properties }) => {
     // Update the DOM element
     sceneRenderer.updateTokenElement(token);
 
-    // Setup interactions if necessary
-    if (token.movableByPlayers) {
-      tokenManager.setupTokenInteractions(token);
-    }
+    // Always setup interactions to reflect any changes
+    tokenManager.setupTokenInteractions(token);
   }
 });
 
