@@ -29,7 +29,7 @@ export class TokenManager {
       if (this.isDM) {
         interact(element)
           .resizable({
-            edges: { left: true, right: true, bottom: true, top: true },
+            edges: { right: true, bottom: true },
             invert: 'none',
           })
           .on('resizestart', (event) => {
