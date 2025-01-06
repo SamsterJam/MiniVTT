@@ -11,6 +11,7 @@ export class SceneRenderer {
   }
 
   renderScene(scene) {
+    this.resetCamera();
     this.container.innerHTML = ''; // Clear existing content
     this.tokens = scene.tokens;
 
@@ -75,28 +76,76 @@ export class SceneRenderer {
     }
   }
 
-  // Adjust background color based on tokens
-  setBackgroundBasedOnTokens() {
-    // After rendering tokens, find the largest image token by area
-    const imageTokens = this.tokens.filter((token) => token.mediaType !== 'video');
+  resetCamera() {
+    this.scale = 1;
+    this.offsetX = 0;
+    this.offsetY = 0;
+  }
 
-    if (imageTokens.length > 0) {
-      let largestImageToken = imageTokens.reduce((prev, current) => {
+  // Adjust background color based on the largest token (image or video)
+  setBackgroundBasedOnTokens() {
+    // Find the largest token by area, regardless of whether it's an image or video
+    let largestToken = null;
+    if (this.tokens.length > 0) {
+      largestToken = this.tokens.reduce((prev, current) => {
         return prev.width * prev.height > current.width * current.height ? prev : current;
       });
+    }
 
-      // Extract the dominant color from the largest image token
-      extractDominantColor(largestImageToken.imageUrl)
-        .then((color) => {
-          // Set the background color of the scene container
-          this.container.style.backgroundColor = color;
-        })
-        .catch((err) => {
-          console.error('Error extracting dominant color:', err);
-        });
-    } else {
-      // No image tokens found, set default background color
-      this.container.style.backgroundColor = ''; // Or set a specific color
+    if (largestToken) {
+      if (largestToken.mediaType !== 'video') {
+        // If the largest token is an image, extract the dominant color from the image
+        extractDominantColor(largestToken.imageUrl)
+          .then((color) => {
+            // Set the background color of the scene container
+            this.container.style.backgroundColor = color;
+          })
+          .catch((err) => {
+            console.error('Error extracting dominant color for image:', err);
+          });
+      } else {
+        // If the largest token is a video, create a temporary video element to extract the first frame
+        const video = document.createElement('video');
+        video.src = largestToken.imageUrl;
+        video.crossOrigin = 'Anonymous'; // May be needed for CORS
+        video.muted = true; // Mute the video to avoid autoplay issues
+    
+        // Set up an event listener for when the video is ready to play
+        video.oncanplay = () => {
+          // Play the video briefly to make sure we get a non-black frame
+          video.play();
+    
+          // Wait a short amount of time (e.g., 1 second) to allow the video to display
+          setTimeout(() => {
+            // Create a canvas to capture the first visible frame
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+    
+            // Ensure the canvas matches the video size
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+    
+            // Draw the current frame of the video onto the canvas
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+            // Get the pixel data from the canvas (top-left corner)
+            const imageData = ctx.getImageData(0, 0, 1, 1); // Get the color of the top-left pixel
+            const [r, g, b] = imageData.data;
+    
+            // Format the color as an RGB string
+            const dominantColor = `rgb(${r},${g},${b})`;
+    
+            // Set the background color of the scene container
+            this.container.style.backgroundColor = dominantColor;
+    
+            // Pause the video after capturing the frame
+            video.pause();
+          }, 1000); // 1 second delay before capturing the frame
+        };
+    
+        // Start loading the video
+        video.load();
+      }
     }
   }
 }
