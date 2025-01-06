@@ -29,8 +29,9 @@ export class TokenManager {
       if (this.isDM) {
         interact(element)
           .resizable({
-            edges: { right: true, bottom: true },
+            edges: { top: true, right: true, bottom: true, left: true },
             invert: 'none',
+            margin: 6,
           })
           .on('resizestart', (event) => {
             // Store the initial aspect ratio

@@ -47,7 +47,7 @@ export class PanZoomHandler {
 
     this.scale *= zoom;
     // Limit to reasonable bounds
-    this.scale = Math.min(Math.max(this.scale, 0.1), 5);
+    this.scale = Math.min(Math.max(this.scale, 0.5), 5);
 
     // After adjusting the scale, recalculate the offsets so that the mouse scene position stays under the mouse pointer
     this.offsetX = (mouseX / this.scale) - mouseSceneX;

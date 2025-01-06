@@ -207,14 +207,15 @@ export class SceneManager {
   onKeyDown(event) {
     if (this.selectedTokenId && event.key === 'Delete') {
       this.deleteSelectedToken();
+    } else if (this.selectedTokenId && event.ctrlKey && event.key.toLowerCase() === 'd') {
+      // Duplicate the selected token
+      event.preventDefault(); // Prevent default browser action
+      this.duplicateSelectedToken();
     } else if (this.selectedTokenId && event.key.toLowerCase() === 'i') {
-      // Toggle 'movableByPlayers' property
       this.toggleTokenMovableByPlayers(this.selectedTokenId);
     } else if (event.key.toLowerCase() === 't') {
-      // Toggle toolbar visibility
       this.toggleToolbar();
     } else if (event.key.toLowerCase() === 'm') {
-      // Toggle music panel visibility
       const musicPanel = document.getElementById('music-panel');
       musicPanel.classList.toggle('hidden');
     } else if (event.shiftKey && event.key.toLowerCase() === 'd') {
@@ -228,6 +229,55 @@ export class SceneManager {
       } else {
         alert('No scene is currently loaded.');
       }
+    }
+  }
+
+  duplicateSelectedToken() {
+    const originalToken = this.currentScene.tokens.find((t) => t.tokenId === this.selectedTokenId);
+    if (originalToken) {
+      // Clone the original token
+      const newToken = JSON.parse(JSON.stringify(originalToken));
+  
+      // Generate a new unique tokenId
+      newToken.tokenId = Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9);
+  
+      // Offset the new token's position slightly
+      const offset = 20; // Adjust as needed
+      newToken.x = originalToken.x + offset;
+      newToken.y = originalToken.y + offset;
+  
+      // Add the new token to the current scene's tokens array
+      this.currentScene.tokens.push(newToken);
+  
+      // Notify the server about the new token
+      this.socket.emit('addToken', { sceneId: this.currentScene.sceneId, token: newToken });
+  
+      // Render the new token
+      this.sceneRenderer.renderToken(newToken);
+  
+      // Setup interactions for the new token
+      this.tokenManager.setupTokenInteractions(newToken);
+  
+      // Add event listener for token selection
+      const element = document.getElementById(`token-${newToken.tokenId}`);
+      if (element) {
+        element.addEventListener('click', (event) => this.onTokenClick(event, newToken.tokenId));
+      }
+  
+      // Optionally, select the new token
+      // Unselect previous token
+      if (this.selectedTokenId) {
+        const prevSelectedElement = document.getElementById(`token-${this.selectedTokenId}`);
+        if (prevSelectedElement) {
+          prevSelectedElement.style.boxShadow = '';
+        }
+      }
+      this.selectedTokenId = newToken.tokenId;
+      if (element) {
+        element.style.boxShadow = '0px 0px 10px 3px #222222';
+      }
+    } else {
+      alert('No token is currently selected.');
     }
   }
 
