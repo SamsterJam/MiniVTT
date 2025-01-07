@@ -4,9 +4,6 @@ export class PanZoomHandler {
   constructor(container, sceneRenderer) {
     this.container = container;
     this.sceneRenderer = sceneRenderer;
-    this.scale = sceneRenderer.scale;
-    this.offsetX = sceneRenderer.offsetX;
-    this.offsetY = sceneRenderer.offsetY;
 
     this.isPanning = false;
     this.startX = 0;
@@ -34,29 +31,24 @@ export class PanZoomHandler {
     const mouseY = event.clientY - rect.top;
 
     // Calculate the mouse position in scene (world) coordinates before scaling
-    const mouseSceneX = (mouseX / this.scale) - this.offsetX;
-    const mouseSceneY = (mouseY / this.scale) - this.offsetY;
+    const mouseSceneX = (mouseX / this.sceneRenderer.scale) - this.sceneRenderer.offsetX;
+    const mouseSceneY = (mouseY / this.sceneRenderer.scale) - this.sceneRenderer.offsetY;
 
     // Adjust the scale
     const baseZoomIntensity = 0.0003; // Base zoom intensity
     // Adjust intensity proportionally to current scale
-    const zoomIntensity = baseZoomIntensity * this.scale; // Multiply by scale
+    const zoomIntensity = baseZoomIntensity * this.sceneRenderer.scale; // Multiply by scale
 
     const delta = event.deltaY;
     const zoom = Math.exp(-delta * zoomIntensity);
 
-    this.scale *= zoom;
+    this.sceneRenderer.scale *= zoom;
     // Limit to reasonable bounds
-    this.scale = Math.min(Math.max(this.scale, 0.8), 5);
+    this.sceneRenderer.scale = Math.min(Math.max(this.sceneRenderer.scale, 0.8), 5);
 
     // After adjusting the scale, recalculate the offsets so that the mouse scene position stays under the mouse pointer
-    this.offsetX = (mouseX / this.scale) - mouseSceneX;
-    this.offsetY = (mouseY / this.scale) - mouseSceneY;
-
-    // Update the scene renderer's scale and offset
-    this.sceneRenderer.scale = this.scale;
-    this.sceneRenderer.offsetX = this.offsetX;
-    this.sceneRenderer.offsetY = this.offsetY;
+    this.sceneRenderer.offsetX = (mouseX / this.sceneRenderer.scale) - mouseSceneX;
+    this.sceneRenderer.offsetY = (mouseY / this.sceneRenderer.scale) - mouseSceneY;
 
     // Update all token positions
     this.sceneRenderer.updateAllTokenElements();
@@ -74,18 +66,14 @@ export class PanZoomHandler {
 
   onMouseMove(event) {
     if (this.isPanning) {
-      const deltaX = (event.clientX - this.startX) / this.scale;
-      const deltaY = (event.clientY - this.startY) / this.scale;
+      const deltaX = (event.clientX - this.startX) / this.sceneRenderer.scale;
+      const deltaY = (event.clientY - this.startY) / this.sceneRenderer.scale;
 
-      this.offsetX += deltaX;
-      this.offsetY += deltaY;
+      this.sceneRenderer.offsetX += deltaX;
+      this.sceneRenderer.offsetY += deltaY;
 
       this.startX = event.clientX;
       this.startY = event.clientY;
-
-      // Update the scene renderer's offset
-      this.sceneRenderer.offsetX = this.offsetX;
-      this.sceneRenderer.offsetY = this.offsetY;
 
       // Update all token positions
       this.sceneRenderer.updateAllTokenElements();
