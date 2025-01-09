@@ -83,24 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Music Control Buttons
-  const playMusicButton = document.getElementById('play-music-button');
-  const pauseMusicButton = document.getElementById('pause-music-button');
-  const stopMusicButton = document.getElementById('stop-music-button');
-
-  // Music Control Event Listeners
-  playMusicButton.addEventListener('click', () => {
-    musicManager.playMusic();
-  });
-
-  pauseMusicButton.addEventListener('click', () => {
-    musicManager.pauseMusic();
-  });
-
-  stopMusicButton.addEventListener('click', () => {
-    musicManager.stopMusic();
-  });
-
   // Fetch the list of uploaded music tracks when the page loads
   fetch('/musicList')
     .then((response) => response.json())
@@ -108,7 +90,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (data.success) {
         // Add each track to the MusicManager
         data.musicTracks.forEach((track) => {
-          musicManager.addMusicTrack(track.url, track.filename, track.name);
+          musicManager.addMusicTrack(track.url, track.filename, track.name, track.trackId);
         });
       } else {
         console.error('Error fetching music list:', data.message);
@@ -117,15 +99,4 @@ document.addEventListener('DOMContentLoaded', () => {
     .catch((error) => {
       console.error('Error fetching music list:', error);
     });
-
-
-  
-  // Volume Slider
-  const volumeSlider = document.getElementById('volume-slider');
-
-  // Add event listener for volume change
-  volumeSlider.addEventListener('input', () => {
-    const volume = volumeSlider.value / 100; // Normalize volume to 0.0 - 1.0
-    musicManager.setVolume(volume);
-  });
 });

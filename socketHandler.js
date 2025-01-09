@@ -1,5 +1,6 @@
 // socketHandler.js
-const Scene = require('./models/sceneModel');
+
+const Scene = require('./models/sceneModel'); // Make sure this path is correct
 
 module.exports = (io) => {
   // Scene management
@@ -38,20 +39,25 @@ module.exports = (io) => {
     });
 
     // Music control events
-    socket.on('playMusic', (data) => {
-      socket.broadcast.emit('playMusic', data);
+    socket.on('playTrack', (data) => {
+      socket.broadcast.emit('playTrack', data);
     });
 
-    socket.on('pauseMusic', (data) => {
-      socket.broadcast.emit('pauseMusic', data);
+    socket.on('pauseTrack', (data) => {
+      socket.broadcast.emit('pauseTrack', data);
     });
 
-    socket.on('stopMusic', () => {
-      socket.broadcast.emit('stopMusic');
+    socket.on('setTrackVolume', (data) => {
+      socket.broadcast.emit('setTrackVolume', data);
     });
 
-    socket.on('setVolume', (data) => {
-      socket.broadcast.emit('setVolume', data);
+    socket.on('deleteTrack', (data) => {
+      socket.broadcast.emit('deleteTrack', data);
+    });
+
+    // When a new track is added on the DM side
+    socket.on('addTrack', (data) => {
+      socket.broadcast.emit('addTrack', data);
     });
 
     socket.on('disconnect', () => {

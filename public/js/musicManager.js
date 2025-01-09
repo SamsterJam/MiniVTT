@@ -1,143 +1,149 @@
+// public/js/musicManager.js
+
 export class MusicManager {
   constructor(socket) {
     this.socket = socket;
 
     // Music management properties
-    this.musicTracks = []; // List of uploaded music tracks
-    this.currentMusicTrackIndex = null; // Index of the currently selected music track
-    this.audioElement = new Audio(); // Audio element for music playback
+    this.musicTracks = []; // List of uploaded music tracks with individual controls
 
-    // Initialize volume to 1.0 (100%)
-    this.audioElement.volume = 1.0;
+    // Initialize the music list in the UI
+    this.musicListElement = document.getElementById('music-list');
 
     this.init();
   }
 
   init() {
     this.setupSocketListeners();
-
-    // Music control buttons
-    this.playMusicButton = document.getElementById('play-music-button');
-    this.pauseMusicButton = document.getElementById('pause-music-button');
-    this.stopMusicButton = document.getElementById('stop-music-button');
-    this.deleteMusicButton = document.getElementById('delete-music-button');
-
-    // Event listeners
-    this.playMusicButton.addEventListener('click', () => this.playMusic());
-    this.pauseMusicButton.addEventListener('click', () => this.pauseMusic());
-    this.stopMusicButton.addEventListener('click', () => this.stopMusic());
-    this.deleteMusicButton.addEventListener('click', () => this.deleteSelectedMusicTrack());
-
-    // We will render the music list after tracks are added
   }
 
   // Method to add a music track
-  addMusicTrack(musicUrl, filename, displayName) {
+  addMusicTrack(musicUrl, filename, displayName, trackId = null) {
+    // Generate a unique track ID if not provided
+    trackId = trackId || this.generateTrackId(filename);
+
     // Process name to remove leading numbers and hyphens/underscores
     const displayNameProcessed = displayName || filename.replace(/^\d+\s*[-_]?\s*/, '');
 
+    const audioElement = new Audio(musicUrl);
+    audioElement.loop = true; // Set looping if desired
+    audioElement.volume = 1.0; // Default volume
+
     const track = {
+      trackId: trackId,
       url: musicUrl,
-      filename: filename, // Store the filename for deletion
-      name: displayNameProcessed, // Use the processed display name
+      filename: filename, // For deletion
+      name: displayNameProcessed,
+      audioElement: audioElement,
+      isPlaying: false,
+      volume: 1.0,
     };
     this.musicTracks.push(track);
     this.renderMusicList(); // Update the music list in the UI
   }
 
+  // Generate a unique track ID
+  generateTrackId(filename) {
+    return `${filename}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+  }
+
   // Method to render the music list in the UI
   renderMusicList() {
-    const musicListElement = document.getElementById('music-list');
-    musicListElement.innerHTML = ''; // Clear existing list
+    this.musicListElement.innerHTML = ''; // Clear existing list
 
     this.musicTracks.forEach((track, index) => {
       const li = document.createElement('li');
 
+      // Track Name
       const trackNameSpan = document.createElement('span');
       trackNameSpan.textContent = track.name;
-      trackNameSpan.style.cursor = 'pointer';
+      trackNameSpan.classList.add('track-name');
 
-      // Event listener for selecting a music track
-      trackNameSpan.addEventListener('click', () => this.onMusicTrackClick(index));
+      // Play/Pause Button
+      const playPauseButton = document.createElement('button');
+      playPauseButton.classList.add('play-pause-button');
+      playPauseButton.innerHTML = '<i class="fas fa-play"></i>';
+      playPauseButton.addEventListener('click', () => this.togglePlayPause(index, playPauseButton));
 
-      // Highlight the selected track
-      if (this.currentMusicTrackIndex === index) {
-        li.classList.add('selected-track');
-      }
+      // Volume Slider
+      const volumeSlider = document.createElement('input');
+      volumeSlider.type = 'range';
+      volumeSlider.min = 0;
+      volumeSlider.max = 100;
+      volumeSlider.value = track.volume * 100;
+      volumeSlider.classList.add('volume-slider');
+      volumeSlider.addEventListener('input', () => this.setTrackVolume(index, volumeSlider.value / 100));
 
+      // Delete Button
+      const deleteButton = document.createElement('button');
+      deleteButton.classList.add('delete-button');
+      deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
+      deleteButton.addEventListener('click', () => this.deleteMusicTrack(index));
+
+      // Append elements to the list item
+      li.appendChild(playPauseButton);
       li.appendChild(trackNameSpan);
-      musicListElement.appendChild(li);
+      li.appendChild(volumeSlider);
+      li.appendChild(deleteButton);
+
+      this.musicListElement.appendChild(li);
     });
   }
 
-  // Method to handle music track selection
-  onMusicTrackClick(index) {
-    this.currentMusicTrackIndex = index;
-    this.renderMusicList(); // Update UI
-
+  // Method to toggle play/pause
+  togglePlayPause(index, buttonElement) {
     const track = this.musicTracks[index];
-
-    // Load the selected track into the audio element but do not play yet
-    this.audioElement.src = track.url;
-    this.audioElement.currentTime = 0;
-  }
-
-  // Method to play music
-  playMusic() {
-    // In playMusic() method
-    if (this.currentMusicTrackIndex != null) {
-      this.audioElement.play();
-
-      const track = this.musicTracks[this.currentMusicTrackIndex];
-
-      // Notify players to play the music
-      this.socket.emit('playMusic', {
-        musicUrl: track.url, // Use the relative path
-        currentTime: this.audioElement.currentTime,
-      });
+    if (track.isPlaying) {
+      this.pauseTrack(index, buttonElement);
     } else {
-      alert('Please select a music track to play');
+      this.playTrack(index, buttonElement);
     }
   }
 
-  // Method to pause music
-  pauseMusic() {
-    if (this.audioElement.src) {
-      this.audioElement.pause();
+  // Method to play a track
+  playTrack(index, buttonElement) {
+    const track = this.musicTracks[index];
+    track.audioElement.play();
+    track.isPlaying = true;
 
-      // Notify players to pause the music
-      this.socket.emit('pauseMusic', {
-        currentTime: this.audioElement.currentTime,
-      });
-    }
+    // Update the play/pause button icon
+    buttonElement.innerHTML = '<i class="fas fa-pause"></i>';
+
+    // Notify players to play the track
+    this.socket.emit('playTrack', {
+      trackId: track.trackId,
+      musicUrl: track.url,
+      currentTime: track.audioElement.currentTime,
+    });
   }
 
-  // Method to stop music
-  stopMusic() {
-    if (this.audioElement.src) {
-      this.audioElement.pause();
-      this.audioElement.currentTime = 0;
+  // Method to pause a track
+  pauseTrack(index, buttonElement) {
+    const track = this.musicTracks[index];
+    track.audioElement.pause();
+    track.isPlaying = false;
 
-      // Notify players to stop the music
-      this.socket.emit('stopMusic');
-    }
+    // Update the play/pause button icon
+    buttonElement.innerHTML = '<i class="fas fa-play"></i>';
+
+    // Notify players to pause the track
+    this.socket.emit('pauseTrack', {
+      trackId: track.trackId,
+      currentTime: track.audioElement.currentTime,
+    });
   }
 
-  // Method to set volume
-  setVolume(volume) {
-    this.audioElement.volume = volume;
+  // Method to set track volume
+  setTrackVolume(index, volume) {
+    const track = this.musicTracks[index];
+    track.audioElement.volume = volume;
+    track.volume = volume;
 
     // Notify players to set volume
-    this.socket.emit('setVolume', { volume });
-  }
-
-  // Method to delete the selected music track
-  deleteSelectedMusicTrack() {
-    if (this.currentMusicTrackIndex != null) {
-      this.deleteMusicTrack(this.currentMusicTrackIndex);
-    } else {
-      alert('Please select a music track to delete');
-    }
+    this.socket.emit('setTrackVolume', {
+      trackId: track.trackId,
+      volume,
+    });
   }
 
   // Method to delete a music track
@@ -159,18 +165,19 @@ export class MusicManager {
       .then(response => response.json())
       .then(data => {
         if (data.success) {
+          // Stop and remove the audio element
+          track.audioElement.pause();
+          track.audioElement.src = '';
+          track.audioElement = null;
+
           // Remove the track from the array
           this.musicTracks.splice(index, 1);
-
-          // If the deleted track was currently selected, reset currentMusicTrackIndex
-          if (this.currentMusicTrackIndex === index) {
-            this.currentMusicTrackIndex = null;
-            this.audioElement.pause();
-            this.audioElement.currentTime = 0;
-            this.audioElement.src = '';
-          }
-
           this.renderMusicList(); // Update the music list
+
+          // Notify players to delete the track
+          this.socket.emit('deleteTrack', {
+            trackId: track.trackId,
+          });
         } else {
           alert('Failed to delete music track.');
         }
@@ -182,52 +189,6 @@ export class MusicManager {
 
   // Socket event listeners
   setupSocketListeners() {
-    // Music control events from the server
-    this.socket.on('playMusic', (data) => {
-      this.onPlayMusic(data.musicUrl, data.currentTime);
-    });
-
-    this.socket.on('pauseMusic', (data) => {
-      this.onPauseMusic(data.currentTime);
-    });
-
-    this.socket.on('stopMusic', () => {
-      this.onStopMusic();
-    });
-    this.socket.on('setVolume', (data) => {
-      this.onSetVolume(data.volume);
-    });
+    // Music control events from the server (if needed on DM side)
   }
-
-  // Client-side handlers for music events (optional for DM)
-  onPlayMusic(musicUrl, currentTime) {
-    // If the DM didn't initiate the play, sync the audio element
-    if (this.audioElement.src !== musicUrl) {
-      this.audioElement.src = musicUrl;
-    }
-    if (this.audioElement.currentTime !== currentTime) {
-      this.audioElement.currentTime = currentTime;
-    }
-    if (this.audioElement.paused) {
-      this.audioElement.play();
-    }
-  }
-
-  onPauseMusic(currentTime) {
-    this.audioElement.currentTime = currentTime;
-    if (!this.audioElement.paused) {
-      this.audioElement.pause();
-    }
-  }
-
-  onStopMusic() {
-    this.audioElement.pause();
-    this.audioElement.currentTime = 0;
-  }
-
-  // Handler for setting the volume based on server data
-  onSetVolume(volume) {
-    this.audioElement.volume = volume;
-  }
-
 }

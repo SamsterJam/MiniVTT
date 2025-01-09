@@ -13,6 +13,9 @@ const sceneRenderer = new SceneRenderer(sceneContainer);
 const panZoomHandler = new PanZoomHandler(sceneContainer, sceneRenderer);
 const tokenManager = new TokenManager(sceneRenderer, socket, false); // false indicates player
 
+// Music management properties
+const musicTracks = {}; // Object to store tracks by trackId
+
 // Receive active scene ID from server
 socket.on('activeSceneId', (sceneId) => {
   if (sceneId) {
@@ -94,54 +97,11 @@ socket.on('removeToken', ({ sceneId, tokenId }) => {
 
 // === Music Handling Code ===
 
-// Get the audio element for music playback
-const audioElement = document.getElementById('background-music');
-
 // Keep track of whether audio has been enabled by the user
 let audioEnabled = false;
-let currentMusicData = null; // Keep track of the current music data
-
-const enableAudioButton = document.getElementById('enable-audio-button');
-
-// Handle music control events
-socket.on('playMusic', (data) => {
-  currentMusicData = data;
-
-  if (audioEnabled) {
-    if (audioElement.src !== data.musicUrl) {
-      audioElement.src = data.musicUrl;
-    }
-    audioElement.currentTime = data.currentTime || 0;
-    audioElement.play().catch((error) => {
-      console.error('Error playing audio:', error);
-    });
-  } else {
-    enableAudioButton.style.display = 'block';
-  }
-});
-
-socket.on('pauseMusic', (data) => {
-  currentMusicData = null; // No music is playing
-  if (audioEnabled) {
-    audioElement.pause();
-    audioElement.currentTime = data.currentTime;
-  }
-});
-
-socket.on('stopMusic', () => {
-  currentMusicData = null; // No music is playing
-  if (audioEnabled) {
-    audioElement.pause();
-    audioElement.currentTime = 0;
-  }
-});
-
-// Handle volume change events from the server
-socket.on('setVolume', (data) => {
-  audioElement.volume = data.volume;
-});
 
 // Handle audio enable button
+const enableAudioButton = document.getElementById('enable-audio-button');
 enableAudioButton.addEventListener('click', () => {
   audioEnabled = true;
   enableAudioButton.style.display = 'none';
@@ -152,17 +112,101 @@ enableAudioButton.addEventListener('click', () => {
     audioOverlay.style.display = 'none';
   }
 
-  // Attempt to play music if music data is available
-  if (currentMusicData) {
-    // Only set src if it's different
-    if (audioElement.src !== currentMusicData.musicUrl) {
-      audioElement.src = currentMusicData.musicUrl;
+  // Play any tracks that are currently playing
+  for (const trackId in musicTracks) {
+    const track = musicTracks[trackId];
+    if (track.isPlaying) {
+      track.audioElement.play().catch((error) => {
+        console.error('Error playing audio:', error);
+      });
     }
-    audioElement.currentTime = currentMusicData.currentTime || 0;
+  }
+});
 
-    audioElement.play().catch((error) => {
-      console.error('Error playing audio after enabling:', error);
+// Handle new track addition
+socket.on('addTrack', (data) => {
+  const { trackId, musicUrl, name } = data;
+
+  // Avoid adding the same track multiple times
+  if (musicTracks[trackId]) return;
+
+  const audioElement = new Audio(musicUrl);
+  audioElement.loop = true; // Set looping if desired
+  audioElement.volume = 1.0;
+
+  const track = {
+    trackId: trackId,
+    name: name,
+    audioElement: audioElement,
+    isPlaying: false,
+    volume: 1.0,
+  };
+
+  musicTracks[trackId] = track;
+
+  // If audio is enabled and the track is supposed to be playing, start playing
+});
+
+// Handle track deletion
+socket.on('deleteTrack', (data) => {
+  const { trackId } = data;
+  const track = musicTracks[trackId];
+  if (track) {
+    track.audioElement.pause();
+    track.audioElement.src = '';
+    delete musicTracks[trackId];
+  }
+});
+
+// Handle play track
+socket.on('playTrack', (data) => {
+  const { trackId, musicUrl, currentTime } = data;
+  let track = musicTracks[trackId];
+
+  if (!track) {
+    // If the track doesn't exist, create it
+    const audioElement = new Audio(musicUrl);
+    audioElement.loop = true;
+    audioElement.volume = 1.0;
+
+    track = {
+      trackId: trackId,
+      audioElement: audioElement,
+      isPlaying: false,
+      volume: 1.0,
+    };
+
+    musicTracks[trackId] = track;
+  }
+
+  track.audioElement.currentTime = currentTime || 0;
+  track.isPlaying = true;
+
+  if (audioEnabled) {
+    track.audioElement.play().catch((error) => {
+      console.error('Error playing audio:', error);
     });
+  }
+});
+
+// Handle pause track
+socket.on('pauseTrack', (data) => {
+  const { trackId, currentTime } = data;
+  const track = musicTracks[trackId];
+  if (track) {
+    track.audioElement.pause();
+    track.audioElement.currentTime = currentTime || 0;
+    track.isPlaying = false;
+  }
+});
+
+// Handle set track volume
+socket.on('setTrackVolume', (data) => {
+  const { trackId, volume } = data;
+  const track = musicTracks[trackId];
+  if (track) {
+    track.audioElement.volume = volume;
+    track.volume = volume;
   }
 });
 
