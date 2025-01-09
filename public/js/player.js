@@ -4,12 +4,12 @@ import { SceneRenderer } from './sceneRenderer.js';
 import { PanZoomHandler } from './panZoomHandler.js';
 import { TokenManager } from './tokenManager.js';
 
-const socket = io();
+const socket = io({ query: { role: 'player' } });
 
 let currentScene = null;
 
 const sceneContainer = document.getElementById('scene-container');
-const sceneRenderer = new SceneRenderer(sceneContainer);
+const sceneRenderer = new SceneRenderer(sceneContainer, false);
 const panZoomHandler = new PanZoomHandler(sceneContainer, sceneRenderer);
 const tokenManager = new TokenManager(sceneRenderer, socket, false); // false indicates player
 
@@ -36,10 +36,11 @@ socket.on('sceneData', (scene) => {
 
 // Function to render a scene
 function renderScene(scene) {
-  sceneRenderer.renderScene(scene);
+  const visibleTokens = scene.tokens.filter(token => !token.hidden);
+  const sceneCopy = Object.assign({}, scene, { tokens: visibleTokens });
+  sceneRenderer.renderScene(sceneCopy);
 
-  // After rendering tokens, setup interactions
-  scene.tokens.forEach((token) => {
+  visibleTokens.forEach((token) => {
     tokenManager.setupTokenInteractions(token);
   });
 }
@@ -47,17 +48,29 @@ function renderScene(scene) {
 // Handle token updates from the server
 socket.on('updateToken', ({ sceneId, tokenId, properties }) => {
   if (!currentScene || currentScene.sceneId !== sceneId) return;
-
-  const token = currentScene.tokens.find((t) => t.tokenId === tokenId);
+  const token = currentScene.tokens.find(t => t.tokenId === tokenId);
   if (token) {
-    // Update token properties
     Object.assign(token, properties);
 
-    // Update the DOM element
-    sceneRenderer.updateTokenElement(token);
-
-    // Always setup interactions to reflect any changes
-    tokenManager.setupTokenInteractions(token);
+    if (token.hidden) {
+      // Remove token
+      const element = document.getElementById(`token-${tokenId}`);
+      if (element && element.parentNode === sceneContainer) {
+        sceneContainer.removeChild(element);
+      }
+      currentScene.tokens = currentScene.tokens.filter(t => t.tokenId !== tokenId);
+    } else {
+      // Update or add token
+      const element = document.getElementById(`token-${tokenId}`);
+      if (element) {
+        sceneRenderer.updateTokenElement(token);
+        tokenManager.setupTokenInteractions(token);
+      } else {
+        // Token was hidden before, now visible
+        sceneRenderer.renderToken(token);
+        tokenManager.setupTokenInteractions(token);
+      }
+    }
   }
 });
 
@@ -67,6 +80,9 @@ socket.on('addToken', ({ sceneId, token }) => {
 
   // Add the new token to the scene's token list
   currentScene.tokens.push(token);
+
+  // Add the new token to the sceneRenderer's tokens array
+  sceneRenderer.tokens.push(token);
 
   // Render the new token
   sceneRenderer.renderToken(token);

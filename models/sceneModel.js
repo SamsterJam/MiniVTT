@@ -129,9 +129,28 @@ class SceneModel {
     if (scene) {
       const token = scene.tokens.find(t => t.tokenId === tokenId);
       if (token) {
+        const wasHidden = token.hidden;
         Object.assign(token, properties);
         scene.dirty = true;
-        socket.broadcast.emit('updateToken', { sceneId, tokenId, properties });
+        const isHidden = token.hidden;
+  
+        if (wasHidden !== isHidden) {
+          if (isHidden) {
+            // Token became hidden
+            socket.broadcast.to('player').emit('removeToken', { sceneId, tokenId });
+            socket.broadcast.to('dm').emit('updateToken', { sceneId, tokenId, properties });
+          } else {
+            // Token became visible
+            socket.broadcast.to('player').emit('addToken', { sceneId, token });
+            socket.broadcast.to('dm').emit('updateToken', { sceneId, tokenId, properties });
+          }
+        } else {
+          if (isHidden) {
+            socket.broadcast.to('dm').emit('updateToken', { sceneId, tokenId, properties });
+          } else {
+            socket.broadcast.emit('updateToken', { sceneId, tokenId, properties });
+          }
+        }
       }
     }
   }

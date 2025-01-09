@@ -5,6 +5,9 @@ const Scene = require('./models/sceneModel'); // Make sure this path is correct
 module.exports = (io) => {
   // Scene management
   io.on('connection', (socket) => {
+    const role = socket.handshake.query.role || 'player';
+    socket.role = role;
+    socket.join(socket.role);
     console.log('A user connected');
 
     // Send the active scene ID to the client upon connection
@@ -14,7 +17,13 @@ module.exports = (io) => {
     socket.on('loadScene', async ({ sceneId }) => {
       try {
         const scene = await Scene.loadScene(sceneId);
-        socket.emit('sceneData', scene);
+        if (socket.role === 'player') {
+          const filteredTokens = scene.tokens.filter(token => !token.hidden);
+          const filteredScene = { ...scene, tokens: filteredTokens };
+          socket.emit('sceneData', filteredScene);
+        } else {
+          socket.emit('sceneData', scene);
+        }
       } catch (err) {
         console.error(err);
         socket.emit('error', { message: 'Failed to load scene.' });

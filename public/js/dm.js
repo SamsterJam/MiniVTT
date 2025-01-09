@@ -7,9 +7,9 @@ import { PanZoomHandler } from './panZoomHandler.js';
 import { TokenManager } from './tokenManager.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-  const socket = io();
+  const socket = io({ query: { role: 'dm' } });
   const sceneContainer = document.getElementById('scene-container');
-  const sceneRenderer = new SceneRenderer(sceneContainer);
+  const sceneRenderer = new SceneRenderer(sceneContainer, true);
   const panZoomHandler = new PanZoomHandler(sceneContainer, sceneRenderer);
   const tokenManager = new TokenManager(sceneRenderer, socket, true); // true indicates DM
   const sceneManager = new SceneManager(socket, sceneRenderer, tokenManager, sceneContainer);

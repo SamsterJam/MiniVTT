@@ -205,7 +205,9 @@ export class SceneManager {
   }
 
   onKeyDown(event) {
-    if (this.selectedTokenId && event.key === 'Delete') {
+    if (this.selectedTokenId && event.key.toLowerCase() === 'h') {
+      this.toggleTokenHiddenState(this.selectedTokenId);
+    } else if (this.selectedTokenId && event.key === 'Delete') {
       this.deleteSelectedToken();
     } else if (this.selectedTokenId && event.ctrlKey && event.key.toLowerCase() === 'd') {
       // Duplicate the selected token
@@ -229,6 +231,31 @@ export class SceneManager {
       } else {
         alert('No scene is currently loaded.');
       }
+    }
+  }
+
+  toggleTokenHiddenState(tokenId) {
+    const token = this.currentScene.tokens.find((t) => t.tokenId === tokenId);
+    if (token) {
+      token.hidden = !token.hidden;
+  
+      // Update the token's visual representation
+      const element = document.getElementById(`token-${tokenId}`);
+      if (element) {
+        if (token.hidden) {
+          // Apply visual indicator (e.g., reduced opacity)
+          element.style.opacity = '0.5';
+        } else {
+          element.style.opacity = '1';
+        }
+      }
+  
+      // Send update to server
+      this.socket.emit('updateToken', {
+        sceneId: this.currentScene.sceneId,
+        tokenId: tokenId,
+        properties: { hidden: token.hidden },
+      });
     }
   }
 

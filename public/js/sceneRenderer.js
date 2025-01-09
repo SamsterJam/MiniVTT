@@ -2,8 +2,9 @@
 import { extractDominantColor } from './utils.js';
 
 export class SceneRenderer {
-  constructor(container) {
+  constructor(container, isDM = false) {
     this.container = container;
+    this.isDM = isDM;
     this.tokens = [];
     this.scale = 1;
     this.offsetX = 0;
@@ -25,6 +26,10 @@ export class SceneRenderer {
   }
 
   renderToken(token) {
+    if (!this.isDM && token.hidden) {
+      return;
+    }
+
     let element;
     if (token.mediaType === 'video') {
       element = document.createElement('video');
@@ -48,6 +53,10 @@ export class SceneRenderer {
     element.style.transform = `rotate(${token.rotation}deg)`;
     element.dataset.tokenId = token.tokenId;
 
+    if (this.isDM && token.hidden) {
+      element.style.opacity = '0.5';
+    }
+
     // Disable default browser dragging
     element.draggable = false;
 
@@ -67,6 +76,12 @@ export class SceneRenderer {
   // Update a single token element's position and size
   updateTokenElement(token) {
     const element = document.getElementById(`token-${token.tokenId}`);
+    if (!this.isDM && token.hidden) {
+      if (element.parentNode === this.container) {
+        this.container.removeChild(element);
+      }
+      return;
+    }
     if (element) {
       element.style.left = `${(token.x + this.offsetX) * this.scale}px`;
       element.style.top = `${(token.y + this.offsetY) * this.scale}px`;
@@ -74,6 +89,12 @@ export class SceneRenderer {
       element.style.height = `${token.height * this.scale}px`;
       element.style.transform = `rotate(${token.rotation}deg)`;
     }
+    if (this.isDM && token.hidden) {
+      element.style.opacity = '0.5';
+    } else {
+      element.style.opacity = '1';
+    }
+
   }
 
   resetCamera() {

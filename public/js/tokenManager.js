@@ -8,6 +8,9 @@ export class TokenManager {
   }
 
   setupTokenInteractions(token) {
+    if (!this.isDM && token.hidden) {
+      return;
+    }
     const element = document.getElementById(`token-${token.tokenId}`);
     if (!element) return;
   
