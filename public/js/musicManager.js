@@ -21,14 +21,23 @@ export class MusicManager {
   addMusicTrack(musicUrl, filename, displayName, trackId = null) {
     // Generate a unique track ID if not provided
     trackId = trackId || this.generateTrackId(filename);
-
+  
     // Process name to remove leading numbers and hyphens/underscores
     const displayNameProcessed = displayName || filename.replace(/^\d+\s*[-_]?\s*/, '');
-
+  
     const audioElement = new Audio(musicUrl);
     audioElement.loop = true; // Set looping if desired
-    audioElement.volume = 1.0; // Default volume
-
+  
+    // Desired initial slider position
+    const initialSliderValue = 50;
+    const exponent = 3;
+  
+    // Calculate the initial volume based on the slider position and exponent
+    const initialVolume = Math.pow(initialSliderValue / 100, exponent);
+  
+    // Set the initial volume for the audio element
+    audioElement.volume = initialVolume;
+  
     const track = {
       trackId: trackId,
       url: musicUrl,
@@ -36,8 +45,9 @@ export class MusicManager {
       name: displayNameProcessed,
       audioElement: audioElement,
       isPlaying: false,
-      volume: 1.0,
+      volume: initialVolume, // Use the calculated initial volume
     };
+  
     this.musicTracks.push(track);
     this.renderMusicList(); // Update the music list in the UI
   }
@@ -75,9 +85,15 @@ export class MusicManager {
       volumeSlider.type = 'range';
       volumeSlider.min = 0;
       volumeSlider.max = 100;
-      volumeSlider.value = track.volume * 100;
+      volumeSlider.value = 50; // Initialize slider at half
       volumeSlider.classList.add('volume-slider');
-      volumeSlider.addEventListener('input', () => this.setTrackVolume(index, volumeSlider.value / 100));
+
+      // Event listener for volume changes
+      volumeSlider.addEventListener('input', () => {
+        const sliderValue = volumeSlider.value;
+        const volume = Math.pow(sliderValue / 100, 3); // Exponential mapping for logarithmic perception
+        this.setTrackVolume(index, volume);
+      });
   
       // Delete Button
       const deleteButton = document.createElement('button');
