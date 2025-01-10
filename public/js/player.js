@@ -189,7 +189,7 @@ socket.on('playTrack', (data) => {
       trackId: trackId,
       audioElement: audioElement,
       isPlaying: false,
-      volume: 1.0,
+      volume: data.volume || 0.5,
     };
 
     musicTracks[trackId] = track;

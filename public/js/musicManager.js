@@ -138,6 +138,7 @@ export class MusicManager {
       trackId: track.trackId,
       musicUrl: track.url,
       currentTime: track.audioElement.currentTime,
+      volume: track.volume, // Include the current volume level
     });
   }
 
