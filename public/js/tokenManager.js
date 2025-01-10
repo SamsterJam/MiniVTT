@@ -22,10 +22,10 @@ export class TokenManager {
         .draggable({
           onmove: (event) => this.onDragMove(event, token),
           modifiers: [
-            interact.modifiers.restrictRect({
-              restriction: 'parent',
-              endOnly: true,
-            }),
+            // interact.modifiers.restrictRect({
+            //   restriction: 'parent',
+            //   endOnly: true,
+            // }),
           ],
         });
   

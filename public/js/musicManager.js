@@ -50,21 +50,26 @@ export class MusicManager {
   // Method to render the music list in the UI
   renderMusicList() {
     this.musicListElement.innerHTML = ''; // Clear existing list
-
+  
     this.musicTracks.forEach((track, index) => {
       const li = document.createElement('li');
-
+      li.classList.add('music-track-item');
+  
       // Track Name
       const trackNameSpan = document.createElement('span');
       trackNameSpan.textContent = track.name;
       trackNameSpan.classList.add('track-name');
-
+  
+      // Controls Container
+      const controlsContainer = document.createElement('div');
+      controlsContainer.classList.add('controls-container');
+  
       // Play/Pause Button
       const playPauseButton = document.createElement('button');
       playPauseButton.classList.add('play-pause-button');
       playPauseButton.innerHTML = '<i class="fas fa-play"></i>';
       playPauseButton.addEventListener('click', () => this.togglePlayPause(index, playPauseButton));
-
+  
       // Volume Slider
       const volumeSlider = document.createElement('input');
       volumeSlider.type = 'range';
@@ -73,19 +78,22 @@ export class MusicManager {
       volumeSlider.value = track.volume * 100;
       volumeSlider.classList.add('volume-slider');
       volumeSlider.addEventListener('input', () => this.setTrackVolume(index, volumeSlider.value / 100));
-
+  
       // Delete Button
       const deleteButton = document.createElement('button');
       deleteButton.classList.add('delete-button');
       deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
       deleteButton.addEventListener('click', () => this.deleteMusicTrack(index));
-
+  
+      // Append controls to the controls container
+      controlsContainer.appendChild(playPauseButton);
+      controlsContainer.appendChild(volumeSlider);
+      controlsContainer.appendChild(deleteButton);
+  
       // Append elements to the list item
-      li.appendChild(playPauseButton);
-      li.appendChild(trackNameSpan);
-      li.appendChild(volumeSlider);
-      li.appendChild(deleteButton);
-
+      li.appendChild(trackNameSpan);       // First line: Track name
+      li.appendChild(controlsContainer);   // Second line: Controls
+  
       this.musicListElement.appendChild(li);
     });
   }

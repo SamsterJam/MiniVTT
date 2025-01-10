@@ -35,7 +35,7 @@ export class PanZoomHandler {
     const mouseSceneY = (mouseY / this.sceneRenderer.scale) - this.sceneRenderer.offsetY;
 
     // Adjust the scale
-    const baseZoomIntensity = 0.0003; // Base zoom intensity
+    const baseZoomIntensity = 0.00035; // Base zoom intensity
     // Adjust intensity proportionally to current scale
     const zoomIntensity = baseZoomIntensity * this.sceneRenderer.scale; // Multiply by scale
 
@@ -44,7 +44,7 @@ export class PanZoomHandler {
 
     this.sceneRenderer.scale *= zoom;
     // Limit to reasonable bounds
-    this.sceneRenderer.scale = Math.min(Math.max(this.sceneRenderer.scale, 0.8), 5);
+    this.sceneRenderer.scale = Math.min(Math.max(this.sceneRenderer.scale, 0.5), 5);
 
     // After adjusting the scale, recalculate the offsets so that the mouse scene position stays under the mouse pointer
     this.sceneRenderer.offsetX = (mouseX / this.sceneRenderer.scale) - mouseSceneX;

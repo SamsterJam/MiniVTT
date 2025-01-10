@@ -119,8 +119,14 @@
   margin-right: 10px;
 }
 
+/* Make unordered lists not have bullets */
+ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
 
-
+/* Music Panel Styles */
 #music-panel {
   position: fixed;
   top: 50px; /* Adjust this value if your toolbar height is different */
@@ -132,12 +138,11 @@
   padding: 10px;
   color: #fff;
   overflow-y: auto;
-  z-index: 100; /* Same z-index as toolbar */
-  transition: transform 0.3s ease;
-  transform: translateX(0); /* Visible by default */
-  z-index: 200;
+  z-index: 200; /* Adjusted z-index */
   border: white 1px solid;
   border-radius: 10px 0 0 10px;
+  transition: transform 0.3s ease;
+  transform: translateX(0); /* Visible by default */
 }
 
 /* Hidden state */
@@ -150,66 +155,96 @@
   margin-right: 300px; /* Same width as music panel */
 }
 
-/* Music tracks */
-#music-panel li {
-  padding: 5px;
+/* Music Tracks List */
+#music-panel ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.music-track-item {
+  padding: 10px;
   border-bottom: 1px solid #444;
-  cursor: pointer;
-}
-
-#music-panel li:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-#music-panel button i {
-  font-size: 18px; /* Adjust icon size */
-}
-
-#music-panel button {
-  padding: 10px;
-  background-color: transparent;
-  border: none;
   color: #fff;
-  cursor: pointer;
 }
 
-#music-panel button:hover {
-  color: #007bff;
+.music-track-item .track-name {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-
-/* Music Controls */
-#music-controls {
+.controls-container {
   display: flex;
-  justify-content: center;
-  margin-top: 10px;
+  align-items: center;
 }
 
-#music-controls button i {
-  font-size: 18px; /* Adjust icon size */
-}
-
-#music-controls button {
-  padding: 10px;
-  margin: 0 5px; /* Add some margin between buttons */
+.play-pause-button,
+.delete-button {
   background-color: transparent;
   border: none;
   color: #fff;
   cursor: pointer;
+  margin-right: 10px;
 }
 
-#music-controls button:hover {
+.play-pause-button i,
+.delete-button i {
+  font-size: 16px;
+}
+
+.play-pause-button:hover,
+.delete-button:hover {
   color: #007bff;
 }
 
-#music-controls button:focus {
+.volume-slider {
+  flex: 1;
+  -webkit-appearance: none; /* For Chrome/Safari */
+  height: 5px;
+  background: #444;
   outline: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-right: 10px;
 }
 
-#music-list li.selected-track {
-  background-color: rgba(255, 255, 255, 0.2);
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; /* Override default look */
+  width: 12px;
+  height: 12px;
+  background: #007bff;
+  border-radius: 50%;
 }
 
+.volume-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: #007bff;
+  border-radius: 50%;
+}
+
+.volume-slider::-ms-thumb {
+  width: 12px;
+  height: 12px;
+  background: #007bff;
+  border-radius: 50%;
+}
+
+/* Adjust list item on hover */
+.music-track-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Selected Track */
+.music-track-item.selected-track {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Music Drop Area */
 #music-drop-area {
   border: 2px dashed #ccc;
   padding: 20px;
@@ -227,7 +262,7 @@
   background-color: #f0f0f0;
 }
 
-/* Add styles for the placeholder during drag */
+/* Dragging Styles */
 .scene-button.dragging {
   opacity: 0.5;
 }
@@ -235,63 +270,4 @@
 .scene-button.placeholder {
   background-color: #444;
   border: 2px dashed #666;
-}
-
-
-/* Volume Control */
-#volume-control {
-  display: flex;
-  align-items: center;
-  margin-top: 10px;
-  padding: 0 10px;
-}
-
-#volume-control label {
-  color: #fff;
-  margin-right: 10px;
-  font-size: 18px;
-}
-
-#volume-control input[type="range"] {
-  flex: 1;
-  -webkit-appearance: none; /* Remove default appearance for Chrome/Safari */
-  appearance: none;
-  height: 5px;
-  background: #444;
-  outline: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-#volume-control input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none; /* Remove default appearance */
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  background: #007bff;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-#volume-control input[type="range"]::-moz-range-thumb {
-  width: 20px;
-  height: 20px;
-  background: #007bff;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-#volume-control input[type="range"]::-ms-thumb {
-  width: 20px;
-  height: 20px;
-  background: #007bff;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-/* For Internet Explorer */
-#volume-control input[type="range"]::-ms-track {
-  background: transparent;
-  border-color: transparent;
-  color: transparent;
 }
