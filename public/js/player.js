@@ -176,23 +176,29 @@ socket.on('deleteTrack', (data) => {
 
 // Handle play track
 socket.on('playTrack', (data) => {
-  const { trackId, musicUrl, currentTime } = data;
+  const { trackId, musicUrl, currentTime, volume } = data; // Destructure 'volume'
   let track = musicTracks[trackId];
 
   if (!track) {
     // If the track doesn't exist, create it
     const audioElement = new Audio(musicUrl);
     audioElement.loop = true;
-    audioElement.volume = 1.0;
+    audioElement.volume = volume !== undefined ? volume : 0.5; // Set volume from DM or default
 
     track = {
       trackId: trackId,
       audioElement: audioElement,
       isPlaying: false,
-      volume: data.volume || 0.5,
+      volume: audioElement.volume,
     };
 
     musicTracks[trackId] = track;
+  } else {
+    // If the track already exists, update the volume if provided
+    if (volume !== undefined) {
+      track.audioElement.volume = volume;
+      track.volume = volume;
+    }
   }
 
   track.audioElement.currentTime = currentTime || 0;
