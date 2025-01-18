@@ -14,13 +14,19 @@ export class SceneRenderer {
   renderScene(scene) {
     this.resetCamera();
     this.container.innerHTML = ''; // Clear existing content
-    this.tokens = scene.tokens;
-
+  
+    // For DM, include all tokens; for players, include only visible tokens
+    if (this.isDM) {
+      this.tokens = scene.tokens;
+    } else {
+      this.tokens = scene.tokens.filter(token => !token.hidden);
+    }
+  
     // Render tokens
     this.tokens.forEach((token) => {
       this.renderToken(token);
     });
-
+  
     // Adjust background color based on tokens
     this.setBackgroundBasedOnTokens();
   }
@@ -69,6 +75,7 @@ export class SceneRenderer {
   // Update all token elements
   updateAllTokenElements() {
     this.tokens.forEach((token) => {
+      if (!this.isDM && token.hidden) return; // Skip hidden tokens for players
       this.updateTokenElement(token);
     });
   }
@@ -76,25 +83,32 @@ export class SceneRenderer {
   // Update a single token element's position and size
   updateTokenElement(token) {
     const element = document.getElementById(`token-${token.tokenId}`);
+  
     if (!this.isDM && token.hidden) {
-      if (element.parentNode === this.container) {
+      if (element && element.parentNode === this.container) {
         this.container.removeChild(element);
       }
       return;
     }
+  
     if (element) {
+      // Update element style
       element.style.left = `${(token.x + this.offsetX) * this.scale}px`;
       element.style.top = `${(token.y + this.offsetY) * this.scale}px`;
       element.style.width = `${token.width * this.scale}px`;
       element.style.height = `${token.height * this.scale}px`;
       element.style.transform = `rotate(${token.rotation}deg)`;
+  
+      if (this.isDM && token.hidden) {
+        element.style.opacity = '0.5';
+      } else {
+        element.style.opacity = '1';
+      }
+    } else if (!token.hidden || this.isDM) {
+      // Token element doesn't exist, create it if it's not hidden
+      this.renderToken(token);
+      // Optionally set up token interactions
     }
-    if (this.isDM && token.hidden) {
-      element.style.opacity = '0.5';
-    } else {
-      element.style.opacity = '1';
-    }
-
   }
 
   resetCamera() {

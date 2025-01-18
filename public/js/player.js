@@ -48,28 +48,46 @@ function renderScene(scene) {
 // Handle token updates from the server
 socket.on('updateToken', ({ sceneId, tokenId, properties }) => {
   if (!currentScene || currentScene.sceneId !== sceneId) return;
-  const token = currentScene.tokens.find(t => t.tokenId === tokenId);
-  if (token) {
-    Object.assign(token, properties);
 
-    if (token.hidden) {
-      // Remove token
-      const element = document.getElementById(`token-${tokenId}`);
-      if (element && element.parentNode === sceneContainer) {
-        sceneContainer.removeChild(element);
-      }
-      currentScene.tokens = currentScene.tokens.filter(t => t.tokenId !== tokenId);
+  // Find the token in currentScene.tokens
+  let token = currentScene.tokens.find(t => t.tokenId === tokenId);
+
+  if (token) {
+    // Token exists, update its properties
+    Object.assign(token, properties);
+  } else {
+    // Token does not exist, possibly unhidden, create it
+    token = { tokenId, sceneId, ...properties };
+    currentScene.tokens.push(token);
+  }
+
+  // Handle hiding and unhiding of tokens
+  if (token.hidden) {
+    // Remove token element from DOM
+    const element = document.getElementById(`token-${tokenId}`);
+    if (element && element.parentNode === sceneContainer) {
+      sceneContainer.removeChild(element);
+    }
+
+    // Remove token from sceneRenderer.tokens
+    sceneRenderer.tokens = sceneRenderer.tokens.filter(t => t.tokenId !== tokenId);
+  } else {
+    // Token is visible
+    // Check if token is already in sceneRenderer.tokens
+    if (!sceneRenderer.tokens.find(t => t.tokenId === tokenId)) {
+      // Add token to sceneRenderer.tokens
+      sceneRenderer.tokens.push(token);
+    }
+
+    const element = document.getElementById(`token-${tokenId}`);
+    if (element) {
+      // Update existing token element
+      sceneRenderer.updateTokenElement(token);
+      tokenManager.setupTokenInteractions(token);
     } else {
-      // Update or add token
-      const element = document.getElementById(`token-${tokenId}`);
-      if (element) {
-        sceneRenderer.updateTokenElement(token);
-        tokenManager.setupTokenInteractions(token);
-      } else {
-        // Token was hidden before, now visible
-        sceneRenderer.renderToken(token);
-        tokenManager.setupTokenInteractions(token);
-      }
+      // Render token
+      sceneRenderer.renderToken(token);
+      tokenManager.setupTokenInteractions(token);
     }
   }
 });
@@ -99,15 +117,15 @@ socket.on('addToken', ({ sceneId, token }) => {
 socket.on('removeToken', ({ sceneId, tokenId }) => {
   if (!currentScene || currentScene.sceneId !== sceneId) return;
 
-  const tokenIndex = currentScene.tokens.findIndex((t) => t.tokenId === tokenId);
-  if (tokenIndex !== -1) {
-    // Remove from currentScene.tokens
-    currentScene.tokens.splice(tokenIndex, 1);
-    // Remove from DOM
-    const element = document.getElementById(`token-${tokenId}`);
-    if (element && element.parentNode === sceneContainer) {
-      sceneContainer.removeChild(element);
-    }
+  // Remove from currentScene.tokens
+  currentScene.tokens = currentScene.tokens.filter(t => t.tokenId !== tokenId);
+  // Remove from sceneRenderer.tokens
+  sceneRenderer.tokens = sceneRenderer.tokens.filter(t => t.tokenId !== tokenId);
+
+  // Remove from DOM
+  const element = document.getElementById(`token-${tokenId}`);
+  if (element && element.parentNode === sceneContainer) {
+    sceneContainer.removeChild(element);
   }
 });
 
