@@ -205,7 +205,11 @@ export class SceneManager {
   }
 
   onKeyDown(event) {
-    if (this.selectedTokenId && event.key.toLowerCase() === 'h') {
+    if (this.selectedTokenId && event.key === ']') {
+      this.moveTokenZIndexUp(this.selectedTokenId);
+    } else if (this.selectedTokenId && event.key === '[') {
+      this.moveTokenZIndexDown(this.selectedTokenId);
+    } else if (this.selectedTokenId && event.key.toLowerCase() === 'h') {
       this.toggleTokenHiddenState(this.selectedTokenId);
     } else if (this.selectedTokenId && event.key === 'Delete') {
       this.deleteSelectedToken();
@@ -272,6 +276,7 @@ export class SceneManager {
       const offset = 20; // Adjust as needed
       newToken.x = originalToken.x + offset;
       newToken.y = originalToken.y + offset;
+      newToken.zIndex = originalToken.zIndex + 1;
   
       // Add the new token to the current scene's tokens array
       this.currentScene.tokens.push(newToken);
@@ -305,6 +310,76 @@ export class SceneManager {
       }
     } else {
       alert('No token is currently selected.');
+    }
+  }
+
+  moveTokenZIndexUp(tokenId) {
+    const tokens = this.currentScene.tokens;
+    tokens.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+    const index = tokens.findIndex(t => t.tokenId === tokenId);
+  
+    if (index < tokens.length - 1) {
+      const token = tokens[index];
+      const nextToken = tokens[index + 1];
+  
+      // Swap zIndex values
+      const tempZIndex = token.zIndex;
+      token.zIndex = nextToken.zIndex;
+      nextToken.zIndex = tempZIndex;
+  
+      // Mark scene as dirty
+      this.currentScene.dirty = true;
+  
+      // Emit updateToken events for both tokens
+      this.socket.emit('updateToken', {
+        sceneId: this.currentScene.sceneId,
+        tokenId: token.tokenId,
+        properties: { zIndex: token.zIndex },
+      });
+      this.socket.emit('updateToken', {
+        sceneId: this.currentScene.sceneId,
+        tokenId: nextToken.tokenId,
+        properties: { zIndex: nextToken.zIndex },
+      });
+  
+      // Update the DOM elements
+      this.sceneRenderer.updateTokenElement(token);
+      this.sceneRenderer.updateTokenElement(nextToken);
+    }
+  }
+
+  moveTokenZIndexDown(tokenId) {
+    const tokens = this.currentScene.tokens;
+    tokens.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+    const index = tokens.findIndex(t => t.tokenId === tokenId);
+  
+    if (index > 0) {
+      const token = tokens[index];
+      const prevToken = tokens[index - 1];
+  
+      // Swap zIndex values
+      const tempZIndex = token.zIndex;
+      token.zIndex = prevToken.zIndex;
+      prevToken.zIndex = tempZIndex;
+  
+      // Mark scene as dirty
+      this.currentScene.dirty = true;
+  
+      // Emit updateToken events for both tokens
+      this.socket.emit('updateToken', {
+        sceneId: this.currentScene.sceneId,
+        tokenId: token.tokenId,
+        properties: { zIndex: token.zIndex },
+      });
+      this.socket.emit('updateToken', {
+        sceneId: this.currentScene.sceneId,
+        tokenId: prevToken.tokenId,
+        properties: { zIndex: prevToken.zIndex },
+      });
+  
+      // Update the DOM elements
+      this.sceneRenderer.updateTokenElement(token);
+      this.sceneRenderer.updateTokenElement(prevToken);
     }
   }
 
@@ -484,12 +559,13 @@ export class SceneManager {
               tokenId: Date.now().toString(),
               sceneId: this.currentScene.sceneId,
               imageUrl: imageUrl,
-              mediaType: mediaType, // Include mediaType
+              mediaType: mediaType,
               x: x,
               y: y,
               width: width,
               height: height,
               rotation: 0,
+              zIndex: this.getMaxZIndex() + 1,
               movableByPlayers: false,
               name: 'New Token',
             };
@@ -598,5 +674,12 @@ export class SceneManager {
       .catch((error) => {
         console.error('Error creating scene:', error);
       });
+  }
+
+  getMaxZIndex() {
+    if (!this.currentScene || !this.currentScene.tokens || this.currentScene.tokens.length === 0) {
+      return 0;
+    }
+    return Math.max(...this.currentScene.tokens.map(token => token.zIndex || 0));
   }
 }

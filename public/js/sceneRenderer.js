@@ -22,6 +22,9 @@ export class SceneRenderer {
       this.tokens = scene.tokens.filter(token => !token.hidden);
     }
   
+    // Sort tokens by zIndex
+    this.tokens.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+  
     // Render tokens
     this.tokens.forEach((token) => {
       this.renderToken(token);
@@ -57,6 +60,7 @@ export class SceneRenderer {
     element.style.width = `${token.width * this.scale}px`;
     element.style.height = `${token.height * this.scale}px`;
     element.style.transform = `rotate(${token.rotation}deg)`;
+    element.style.zIndex = token.zIndex || 0;
     element.dataset.tokenId = token.tokenId;
 
     if (this.isDM && token.hidden) {
@@ -98,6 +102,7 @@ export class SceneRenderer {
       element.style.width = `${token.width * this.scale}px`;
       element.style.height = `${token.height * this.scale}px`;
       element.style.transform = `rotate(${token.rotation}deg)`;
+      element.style.zIndex = token.zIndex || 0;
   
       if (this.isDM && token.hidden) {
         element.style.opacity = '0.5';
