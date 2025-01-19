@@ -11,7 +11,7 @@ let currentScene = null;
 const sceneContainer = document.getElementById('scene-container');
 const sceneRenderer = new SceneRenderer(sceneContainer, false);
 const panZoomHandler = new PanZoomHandler(sceneContainer, sceneRenderer);
-const tokenManager = new TokenManager(sceneRenderer, socket, false); // false indicates player
+const tokenManager = new TokenManager(sceneRenderer, socket, false);
 
 // Music management properties
 const musicTracks = {}; // Object to store tracks by trackId
