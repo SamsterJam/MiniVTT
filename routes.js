@@ -8,24 +8,50 @@ const sceneController = require('./controllers/sceneController');
 const uploadController = require('./controllers/uploadController');
 const musicController = require('./controllers/musicController');
 
-// Route for DM interface
-router.get('/dm', (req, res) => {
+// Middleware to check if user is authenticated as DM
+function checkDMAuth(req, res, next) {
+  if (req.session && req.session.isDM) {
+    next();
+  } else {
+    res.redirect('/dm-login');
+  }
+}
+
+// Route for DM login form
+router.get('/dm-login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'dm-login.html'));
+});
+
+// Handle DM login
+router.post('/dm-login', (req, res) => {
+  const password = req.body.password;
+  if (password === req.app.locals.dmPassword) {
+    req.session.isDM = true;
+    res.redirect('/dm');
+  } else {
+    res.send('Incorrect password. <a href="/dm-login">Try again</a>');
+  }
+});
+
+// Route for DM interface, protected
+router.get('/dm', checkDMAuth, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dm.html'));
 });
 
+// Protect other DM-specific routes
 // Scene Routes
-router.post('/createScene', sceneController.createScene);
-router.get('/scenes', sceneController.getScenes);
-router.post('/updateScene', sceneController.updateScene);
-router.post('/deleteScene', sceneController.deleteScene);
-router.post('/updateSceneOrder', sceneController.updateSceneOrder);
+router.post('/createScene', checkDMAuth, sceneController.createScene);
+router.get('/scenes', sceneController.getScenes); // Players can view scenes
+router.post('/updateScene', checkDMAuth, sceneController.updateScene);
+router.post('/deleteScene', checkDMAuth, sceneController.deleteScene);
+router.post('/updateSceneOrder', checkDMAuth, sceneController.updateSceneOrder);
 
 // Upload Routes
-router.post('/upload', uploadController.uploadFile);
+router.post('/upload', checkDMAuth, uploadController.uploadFile);
 
 // Music Routes
-router.post('/uploadMusic', musicController.uploadMusic);
-router.get('/musicList', musicController.getMusicList);
-router.post('/deleteMusic', musicController.deleteMusic);
+router.post('/uploadMusic', checkDMAuth, musicController.uploadMusic);
+router.get('/musicList', musicController.getMusicList); // Players can get music list
+router.post('/deleteMusic', checkDMAuth, musicController.deleteMusic);
 
 module.exports = router;
