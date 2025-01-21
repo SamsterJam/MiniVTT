@@ -37,7 +37,7 @@ export class PanZoomHandler {
     // Adjust the scale
     const baseZoomIntensity = 0.00035; // Base zoom intensity
     // Adjust intensity proportionally to current scale
-    const zoomIntensity = baseZoomIntensity * this.sceneRenderer.scale; // Multiply by scale
+    const zoomIntensity = baseZoomIntensity * this.sceneRenderer.scale;
 
     const delta = event.deltaY;
     const zoom = Math.exp(-delta * zoomIntensity);

@@ -26,7 +26,7 @@ export class MusicManager {
     const displayNameProcessed = displayName || filename.replace(/^\d+\s*[-_]?\s*/, '');
   
     const audioElement = new Audio(musicUrl);
-    audioElement.loop = true; // Set looping if desired
+    audioElement.loop = true;
   
     // Desired initial slider position
     const initialSliderValue = 50;
@@ -45,11 +45,11 @@ export class MusicManager {
       name: displayNameProcessed,
       audioElement: audioElement,
       isPlaying: false,
-      volume: initialVolume, // Use the calculated initial volume
+      volume: initialVolume,
     };
   
     this.musicTracks.push(track);
-    this.renderMusicList(); // Update the music list in the UI
+    this.renderMusicList(); 
   }
 
   // Generate a unique track ID
@@ -138,7 +138,7 @@ export class MusicManager {
       trackId: track.trackId,
       musicUrl: track.url,
       currentTime: track.audioElement.currentTime,
-      volume: track.volume, // Include the current volume level
+      volume: track.volume,
     });
   }
 

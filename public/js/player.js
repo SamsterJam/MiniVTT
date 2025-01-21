@@ -150,7 +150,7 @@ socket.on('addTrack', (data) => {
   if (musicTracks[trackId]) return;
 
   const audioElement = new Audio(musicUrl);
-  audioElement.loop = true; // Set looping if desired
+  audioElement.loop = true;
   audioElement.volume = 1.0;
 
   const track = {
@@ -179,7 +179,7 @@ socket.on('deleteTrack', (data) => {
 
 // Handle play track
 socket.on('playTrack', (data) => {
-  const { trackId, musicUrl, currentTime, volume } = data; // Destructure 'volume'
+  const { trackId, musicUrl, currentTime, volume } = data;
   let track = musicTracks[trackId];
 
   if (!track) {

@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Drag and Drop Event Listeners
   musicDropArea.addEventListener('dragenter', (e) => {
     e.preventDefault();
-    musicDropArea.style.backgroundColor = '#f0f0f0'; // Optional: Visual feedback on drag enter
+    musicDropArea.style.backgroundColor = '#f0f0f0';
   });
 
   musicDropArea.addEventListener('dragover', (e) => {
@@ -40,12 +40,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   musicDropArea.addEventListener('dragleave', (e) => {
     e.preventDefault();
-    musicDropArea.style.backgroundColor = ''; // Optional: Reset visual feedback on drag leave
+    musicDropArea.style.backgroundColor = '';
   });
 
   musicDropArea.addEventListener('drop', (e) => {
     e.preventDefault();
-    musicDropArea.style.backgroundColor = ''; // Reset visual feedback on drop
+    musicDropArea.style.backgroundColor = '';
     const files = e.dataTransfer.files;
     handleMusicFiles(files);
   });
@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.success) {
               const musicUrl = data.musicUrl;
               const filename = data.filename;
-              const displayName = data.displayName; // Optionally use a display name from the server
+              const displayName = data.displayName;
               // Add the music track to the MusicManager
               musicManager.addMusicTrack(musicUrl, filename, displayName);
             } else {
