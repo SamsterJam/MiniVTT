@@ -9,7 +9,7 @@ I created MiniVTT with the goal of minimizing the time and effort required for D
 I also appreciate modern, responsive interfaces that support panning and zooming, enabling each player to focus on specific parts of the scene. Switching between scenes is just a click away, instantly transitioning all players to the new view. Each scene is composed entirely of 'tokens,' which can be animated or static images. These tokens serve as maps, grids, player characters, monsters, items, puzzle pieces, or anything else you can imagine. This simple architecture grants you complete control over your game environment. 🎭
 
 <p align="center">
-  <img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_dmtools_demo.gif?raw=true" alt="MiniVTT Demo Gif">
+  <img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_full_demo.gif?raw=true" alt="MiniVTT Demo Gif">
 </p>
 
 ---
