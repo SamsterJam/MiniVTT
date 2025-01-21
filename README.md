@@ -75,10 +75,10 @@ I also appreciate modern, responsive interfaces that support panning and zooming
 ## Showcase GIFs 🎥
 
 1. **Live Synced Movement**  
-   <img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_dmtools_demo.gif?raw=true" alt="Live Movement Demo">
+   <img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_sync_demo.gif?raw=true" alt="Live Movement Demo">
 
 2. **DM Tools & Hidden Tokens**  
-   <img src="https://samsterjam.com/minivtt_dmtools_demo.gif" alt="DM Tools Demo">
+   <img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_dmtools_demo.gif?raw=true" alt="DM Tools Demo">
 
 3. **Music Manager**  
    <img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_music_demo.gif?raw=true" alt="Epic Music Setup Demo">
