@@ -9,7 +9,7 @@ Everything in MiniVTT is a token - your maps, character pieces, monsters, items,
 The interface supports panning and zooming so players can focus on different parts of the scene. Scene switching is instant - click a scene in the DM panel and everyone transitions immediately. Most DM actions are either drag-and-drop or keyboard shortcuts to keep things fast.
 
 <p align="center">
-  <img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_full_demo.gif?raw=true" alt="MiniVTT Demo Gif">
+  <img src="https://samsterjam.com/minivtt_full_demo.webp?raw=true" alt="MiniVTT Demo Gif">
 </p>
 
 ---
