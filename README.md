@@ -1,12 +1,12 @@
 ![MiniVTT Banner](https://samsterjam.com/minivtt_banner.png)
 
-# MiniVTT - Your Minimal Yet Powerful Virtual Tabletop 🎲
+# MiniVTT
 
-MiniVTT is a streamlined, web-based virtual tabletop designed to provide Game Masters (GMs/DMs) and players with all the essential tools for immersive role-playing sessions. Gather your friends, maps, tokens, and dice, and let MiniVTT take care of the rest! 🗺️
+A lightweight web-based virtual tabletop for running tabletop RPG sessions. Built because I got tired of dealing with bloated VTTs that take forever to set up for simple encounters.
 
-I created MiniVTT with the goal of minimizing the time and effort required for DMs to set up and manage game scenes. Many virtual tabletops are overloaded with features, making even simple scene setups time-consuming. MiniVTT addresses this by offering a straightforward solution that allows DMs to effortlessly display scenes and control player interactions. With a focus on minimalism and simplicity, most actions for the DM involve intuitive drag-and-drop mechanics or convenient keybinds.
+Everything in MiniVTT is a token - your maps, character pieces, monsters, items, whatever. Drag and drop images or videos onto the canvas and you're good to go. The DM gets full control over what players can see and interact with, and everything syncs in real-time across all connected clients.
 
-I also appreciate modern, responsive interfaces that support panning and zooming, enabling each player to focus on specific parts of the scene. Switching between scenes is just a click away, instantly transitioning all players to the new view. Each scene is composed entirely of 'tokens,' which can be animated or static images. These tokens serve as maps, grids, player characters, monsters, items, puzzle pieces, or anything else you can imagine. This simple architecture grants you complete control over your game environment. 🎭
+The interface supports panning and zooming so players can focus on different parts of the scene. Scene switching is instant - click a scene in the DM panel and everyone transitions immediately. Most DM actions are either drag-and-drop or keyboard shortcuts to keep things fast.
 
 <p align="center">
   <img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_full_demo.gif?raw=true" alt="MiniVTT Demo Gif">
@@ -14,46 +14,36 @@ I also appreciate modern, responsive interfaces that support panning and zooming
 
 ---
 
-## Table of Contents 📚
+## Table of Contents
 
-1. [Features ✨](#features-)
-2. [To-Do 📝](#to-do-)
-3. [Showcase GIFs 🎥](#showcase-gifs-)
-4. [Installation 🛠️](#installation-)
-5. [Usage 🎮](#usage-)
-6. [Project Structure 🗂️](#project-structure-)
-7. [Built With 🛠️](#built-with-)
-8. [Important Security Disclaimer ⚠️](#important-security-disclaimer-)
-
+1. [Features](#features)
+2. [To-Do](#to-do)
+3. [Showcase](#showcase)
+4. [Installation](#installation)
+5. [Usage](#usage)
+6. [Project Structure](#project-structure)
+7. [Built With](#built-with)
+8. [Security Disclaimer](#security-disclaimer)
 
 ---
 
-## Features ✨
+## Features
 
-• Real-Time Synchronization 🔄  
-  – DM and Player clients stay perfectly in sync with token placements, movements, and scene changes.  
+**Real-time sync** - Token movements, scene changes, and music playback stay synchronized across all connected clients (DM and players).
 
-• Multiple Scenes Management 🎬  
-  – Create, switch, and reorder scenes on-the-fly. Move your party from the tavern to the dragon’s lair in seconds.  
+**Scene management** - Create and switch between multiple scenes. Reorder them in the sidebar. Everyone sees the active scene instantly when you switch.
 
-• Drag-and-Drop Uploads 📂  
-  – Instantly drop images or videos onto the scene to create tokens—super easy for custom art and epic cutscenes.  
+**Drag-and-drop everything** - Drop images or videos directly onto the canvas to create tokens. Drop audio files to add music tracks.
 
-• Token Control 🎮  
-  – Resize, rotate, move, and reorder tokens. Toggle visibility and even hand move-control to players with a single key press.  
+**Token controls** - Move, resize, rotate, and layer tokens. Toggle visibility to hide things from players. Give players permission to move specific tokens. All controlled by keyboard shortcuts or mouse interactions.
 
-• Hidden Tokens for DM 🕵️‍♂️  
-  – Keep secrets hidden from your players' view until the perfect moment to reveal them. Surprise goblins never felt this good.  
+**Hidden tokens** - Keep tokens invisible to players until you're ready to reveal them. Good for surprises and fog of war.
 
-• Music Manager 🎵  
-  – Upload, organize, and play background music to set the mood! Share the same track across all clients for full immersion.  
+**Music manager** - Upload and play background music. Volume controls sync across all clients.
 
-• Zoom & Pan 🔍  
-  – Effortlessly zoom in on details or pan across the map with intuitive mouse wheel and middle-click interactions.  
+**Pan and zoom** - Mouse wheel to zoom, middle-click to pan. Each player can navigate independently while viewing the same scene.
 
-• Hotkeys Galore ⌨️  
-  – Quickly hide tokens, change z-index ordering ([ / ]), duplicate tokens (Ctrl + D), or toggle toolbar (T) for better workflow.  
-
+**Keyboard shortcuts** - Most common DM actions have hotkeys: hide tokens (H), toggle player movement (I), adjust z-index ([/]), duplicate (Ctrl+D), etc.
 
 <p align="center">
   <img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_scenebuild_demo.gif?raw=true" alt="MiniVTT Scene Building Demo Gif">
@@ -61,9 +51,9 @@ I also appreciate modern, responsive interfaces that support panning and zooming
 
 ---
 
-## To-Do 📝
+## To-Do
 
-- [ ] Security for websockets and overall application  
+- [ ] Security for websockets and overall application
 - [ ] Sortable music order in DM panel
 - [ ] Better documented hotkeys
 - [ ] Update/Improve DM interface & Multiselect
@@ -72,140 +62,137 @@ I also appreciate modern, responsive interfaces that support panning and zooming
 
 ---
 
-## Showcase GIFs 🎥
+## Showcase
 
-1. **Live Synced Movement**  
-   <img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_sync_demo.gif?raw=true" alt="Live Movement Demo">
+**Live Synced Movement**
+<img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_sync_demo.gif?raw=true" alt="Live Movement Demo">
 
-2. **DM Tools & Hidden Tokens**  
-   <img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_dmtools_demo.gif?raw=true" alt="DM Tools Demo">
+**DM Tools & Hidden Tokens**
+<img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_dmtools_demo.gif?raw=true" alt="DM Tools Demo">
 
-3. **Music Manager**  
-   <img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_music_demo.gif?raw=true" alt="Epic Music Setup Demo">
-
+**Music Manager**
+<img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_music_demo.gif?raw=true" alt="Music Manager Demo">
 
 ---
 
-## Installation 🛠️
+## Installation
 
-### 1. Clone the Repository
+### Clone the Repository
 ```sh
 git clone https://github.com/SamsterJam/MiniVTT.git
 cd MiniVTT
 ```
 
-### 2. Install Dependencies
+### Install Dependencies
 ```sh
 npm install
 ```
 
-### 3. Start the Server 🚀
+### Start the Server
 ```sh
 npm start
 ```
-The server defaults to port 3000. Open your browser and navigate to [http://localhost:3000](http://localhost:3000).
 
-### 4. Bring Your Friends 🎉
-Share the URL with your players. One person logs in as DM, and others log in as Players to experience real-time synergy.
+Server runs on port 3000 by default. Navigate to `http://localhost:3000` to get started.
 
----
-
-## Usage 🎮
-
-1. **Open DM View**  
-   • After starting the server, navigate to http://hostipaddress:3000/dm to manage scenes, tokens, music, etc.  
-
-2. **Open Player View**  
-   • Send your players to http://hostipaddress:3000. They get a simplified interface to see only what you reveal.  
-
-3. **Create or Switch Scenes**  
-   • Use the “Create Scene” button (in DM view). Name your scene, then select it from the side panel.  
-
-4. **Drag and Drop**  
-   • Upload images or videos onto the DM view to create tokens. You can also drag audio files onto the music drop area to add tracks!  
-
-5. **Token Manipulation**  
-   • Click or tap tokens to select (DM only). Use arrow keys or your mouse to drag them around.  
-   • Press “[” or “]” to move them down or up in stacking order (Z-index).  
-   • Press “H” to toggle hidden from players.  
-   • Press “I” to toggle if players can move them.  
-   • Press “Delete” to remove them.  
-
-6. **Music Management** 🎧  
-   • Drag audio files into the “music-drop-area” or select from the “Music Manager.”  
-   • Control volume, press play or pause, or remove tracks entirely.  
-   • Sound syncs seamlessly for everyone!  
-
-7. **Shortcuts** ⏩  
-   • T: Toggle the DM toolbar.  
-   • M: Toggle the music panel.  
-   • Ctrl + D (with a token selected): Duplicate that token.  
-   • Shift + D (with a scene loaded): Prompt to delete the current scene.  
+Share the URL with your players - one person connects as DM at `/dm`, everyone else connects as players at the root URL.
 
 ---
 
-## Project Structure 🗂️
+## Usage
 
-Below is a simplified look at the files and folders:
+### DM View
+Navigate to `http://your-host:3000/dm` to access the DM interface where you can manage scenes, tokens, and music.
 
+### Player View
+Players connect to `http://your-host:3000` and get a simplified view that only shows what the DM reveals.
+
+### Creating Scenes
+Click "Create Scene" in the DM panel, give it a name, and select it from the sidebar to make it active.
+
+### Adding Tokens
+Drag and drop image or video files onto the canvas. Each file becomes a token you can manipulate.
+
+### Token Controls (DM only)
+- Click to select a token
+- Drag with mouse or use arrow keys to move
+- `[` / `]` - Move token down/up in the layer order (z-index)
+- `H` - Hide token from players
+- `I` - Toggle whether players can move this token
+- `Delete` - Remove token
+- `Ctrl+D` - Duplicate selected token
+
+### Adding Music
+Drag audio files into the music drop area or use the Music Manager panel. Playback and volume sync across all clients.
+
+### Other Shortcuts
+- `T` - Toggle DM toolbar
+- `M` - Toggle music panel
+- `Shift+D` - Delete current scene (with confirmation)
+
+---
+
+## Project Structure
+
+```
 .
-├── app.js                  // Express setup  
-├── controllers            // Controllers  
-│   ├── musicController.js  
-│   ├── sceneController.js  
-│   └── uploadController.js  
-├── data  
-│   └── scenes             // Stored scenes data  
-├── middlewares  
-│   ├── multerMusic.js     // Middleware for music uploads  
-│   └── multerUpload.js    // Middleware for token uploads  
-├── models  
-│   └── sceneModel.js      // Scene schema/model logic  
-├── public                 // Static front-end content  
-│   ├── css  
-│   │   ├── dm.css  
-│   │   └── styles.css  
-│   ├── dm-login.html      
-│   ├── dm.html            // DM view  
-│   ├── index.html         // Landing page  
-│   ├── js                 // Front-end scripts  
-│   │   ├── dm.js  
-│   │   ├── musicManager.js  
-│   │   ├── panZoomHandler.js  
-│   │   ├── player.js      // Player view script  
-│   │   ├── sceneManager.js  
-│   │   ├── sceneRenderer.js  
-│   │   ├── tokenManager.js  
-│   │   └── utils.js  
-│   ├── music              // Uploaded music  
-│   └── uploads            // Uploaded images/videos tokens  
-├── routes.js  
-├── server.js              // Server startup logic  
-└── socketHandler.js       // Real-time socket.io handling  
+├── app.js                  // Express setup
+├── controllers
+│   ├── musicController.js
+│   ├── sceneController.js
+│   └── uploadController.js
+├── data
+│   └── scenes             // Stored scene data
+├── middlewares
+│   ├── multerMusic.js     // Music upload handling
+│   └── multerUpload.js    // Token upload handling
+├── models
+│   └── sceneModel.js      // Scene data model
+├── public                 // Client-side files
+│   ├── css
+│   │   ├── dm.css
+│   │   └── styles.css
+│   ├── dm-login.html
+│   ├── dm.html            // DM interface
+│   ├── index.html         // Player interface
+│   ├── js
+│   │   ├── dm.js
+│   │   ├── musicManager.js
+│   │   ├── panZoomHandler.js
+│   │   ├── player.js
+│   │   ├── sceneManager.js
+│   │   ├── sceneRenderer.js
+│   │   ├── tokenManager.js
+│   │   └── utils.js
+│   ├── music              // Uploaded audio files
+│   └── uploads            // Uploaded token images/videos
+├── routes.js
+├── server.js              // Server entry point
+└── socketHandler.js       // WebSocket event handling
+```
 
 ---
 
-## Built With 🛠️
+## Built With
 
-• [Node.js](https://nodejs.org/) – The server-side runtime  
-• [Express](https://expressjs.com/) – Web framework for Node.js  
-• [Socket.IO](https://socket.io/) – Real-time bidirectional event-based communication  
-• [Interact.js](https://interactjs.io/) – Drag-and-drop & resize library  
-• [SortableJS](https://github.com/SortableJS/Sortable) – Reordering feature for scenes  
-• [Multer](https://github.com/expressjs/multer) – Middleware for handling file uploads  
-
----
-
-## Important Security Disclaimer ⚠️
-
-This application is still in an experimental stage and has not been thoroughly tested or audited for vulnerabilities. Running MiniVTT on a server exposed to the internet carries inherent risks:
-
-• Only use the application with people you trust or on secure, private networks.  
-• Do not assume your data is protected—sensitive information (like tokens or scene info) might be discoverable or interceptable if proper security measures are not in place.  
-• Avoid leaving the application running on a public server when not in active use.  
-• Always enable HTTPS (SSL certificates) and secure WebSockets (wss) in production-like environments.  
-
-By using this software, you acknowledge and accept any risks associated with its deployment. Please make sure to do your own security assessments. Stay safe and game on!
+- [Node.js](https://nodejs.org/) - Server runtime
+- [Express](https://expressjs.com/) - Web framework
+- [Socket.IO](https://socket.io/) - Real-time communication
+- [Interact.js](https://interactjs.io/) - Drag, drop, and resize
+- [SortableJS](https://github.com/SortableJS/Sortable) - Scene reordering
+- [Multer](https://github.com/expressjs/multer) - File upload handling
 
 ---
-May all your rolls be crits and your stories legendary!  
+
+## Security Disclaimer
+
+This is an experimental project and hasn't been security audited. If you're running it on anything other than a trusted local network, you should know:
+
+- WebSocket connections are not secured by default
+- There's no authentication beyond the DM/player split
+- File uploads aren't validated beyond basic type checking
+- Anyone with network access can potentially connect
+
+Only run this with people you trust, preferably on a local network. If you need to expose it to the internet, put it behind proper authentication and use HTTPS/WSS.
+
+Use at your own risk.
