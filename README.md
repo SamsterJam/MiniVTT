@@ -9,7 +9,7 @@ Everything in MiniVTT is a token - your maps, character pieces, monsters, items,
 The interface supports panning and zooming so players can focus on different parts of the scene. Scene switching is instant - click a scene in the DM panel and everyone transitions immediately. Most DM actions are either drag-and-drop or keyboard shortcuts to keep things fast.
 
 <p align="center">
-  <img src="https://samsterjam.com/minivtt_full_demo.webp?raw=true" alt="MiniVTT Demo Gif">
+  <img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_full_demo.webp?raw=true" alt="MiniVTT Demo Gif">
 </p>
 
 ---
@@ -46,7 +46,7 @@ The interface supports panning and zooming so players can focus on different par
 **Keyboard shortcuts** - Most common DM actions have hotkeys: hide tokens (H), toggle player movement (I), adjust z-index ([/]), duplicate (Ctrl+D), etc.
 
 <p align="center">
-  <img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_scenebuild_demo.gif?raw=true" alt="MiniVTT Scene Building Demo Gif">
+  <img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_scenebuild_demo.webp?raw=true" alt="MiniVTT Scene Building Demo Gif">
 </p>
 
 ---
@@ -65,13 +65,13 @@ The interface supports panning and zooming so players can focus on different par
 ## Showcase
 
 **Live Synced Movement**
-<img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_sync_demo.gif?raw=true" alt="Live Movement Demo">
+<img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_sync_demo.webp?raw=true" alt="Live Movement Demo">
 
 **DM Tools & Hidden Tokens**
-<img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_dmtools_demo.gif?raw=true" alt="DM Tools Demo">
+<img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_dmtools_demo.webp?raw=true" alt="DM Tools Demo">
 
 **Music Manager**
-<img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_music_demo.gif?raw=true" alt="Music Manager Demo">
+<img src="https://github.com/SamsterJam/SamsterJam_Repo_Gifs/blob/main/minivtt_music_demo.webp?raw=true" alt="Music Manager Demo">
 
 ---
 
