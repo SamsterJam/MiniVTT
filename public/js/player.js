@@ -103,11 +103,7 @@ socket.on('removeToken', ({ sceneId, tokenId }) => {
   // Remove from sceneRenderer.tokens
   sceneRenderer.tokens = sceneRenderer.tokens.filter(t => t.tokenId !== tokenId);
 
-  // Remove from DOM
-  const element = document.getElementById(`token-${tokenId}`);
-  if (element && element.parentNode === sceneContainer) {
-    sceneContainer.removeChild(element);
-  }
+  sceneRenderer.removeTokenElement(tokenId);
 });
 
 // === Music Handling Code ===

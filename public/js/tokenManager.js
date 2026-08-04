@@ -1,5 +1,7 @@
 // public/js/tokenManager.js
 
+const MIN_TOKEN_SIZE = 8;
+
 export class TokenManager {
   constructor(sceneRenderer, socket, isDM = false) {
     this.sceneRenderer = sceneRenderer;
@@ -63,18 +65,11 @@ export class TokenManager {
   }
 
   onDragMove(event, token) {
-    const target = event.target;
+    // Pointer deltas arrive in screen pixels; tokens live in world units.
+    token.x += event.dx / this.sceneRenderer.scale;
+    token.y += event.dy / this.sceneRenderer.scale;
 
-    // Calculate new position in base coordinates
-    const deltaX = event.dx / this.sceneRenderer.scale;
-    const deltaY = event.dy / this.sceneRenderer.scale;
-
-    token.x += deltaX;
-    token.y += deltaY;
-
-    // Update element style
-    target.style.left = `${(token.x + this.sceneRenderer.offsetX) * this.sceneRenderer.scale}px`;
-    target.style.top = `${(token.y + this.sceneRenderer.offsetY) * this.sceneRenderer.scale}px`;
+    this.sceneRenderer.updateTokenElement(token);
 
     // Send update to server
     this.socket.emit('updateToken', {
@@ -85,16 +80,12 @@ export class TokenManager {
   }
 
   onResizeMove(event, token) {
-    const target = event.target;
+    const { scale } = this.sceneRenderer;
 
-    // Check if Shift key is pressed
-    const shiftKey = event.shiftKey;
+    let deltaWidth = event.deltaRect.width / scale;
+    let deltaHeight = event.deltaRect.height / scale;
 
-    // Calculate new size in base coordinates
-    let deltaWidth = event.deltaRect.width / this.sceneRenderer.scale;
-    let deltaHeight = event.deltaRect.height / this.sceneRenderer.scale;
-
-    if (!shiftKey) {
+    if (!event.shiftKey) {
       // Preserve aspect ratio
       const aspectRatio = token.initialAspectRatio;
 
@@ -105,21 +96,15 @@ export class TokenManager {
       }
     }
 
-    token.width += deltaWidth;
-    token.height += deltaHeight;
+    // The server rejects non-positive sizes, so never send one.
+    token.width = Math.max(MIN_TOKEN_SIZE, token.width + deltaWidth);
+    token.height = Math.max(MIN_TOKEN_SIZE, token.height + deltaHeight);
 
     // Adjust position if needed
-    const deltaX = event.deltaRect.left / this.sceneRenderer.scale;
-    const deltaY = event.deltaRect.top / this.sceneRenderer.scale;
+    token.x += event.deltaRect.left / scale;
+    token.y += event.deltaRect.top / scale;
 
-    token.x += deltaX;
-    token.y += deltaY;
-
-    // Update element style
-    target.style.left = `${(token.x + this.sceneRenderer.offsetX) * this.sceneRenderer.scale}px`;
-    target.style.top = `${(token.y + this.sceneRenderer.offsetY) * this.sceneRenderer.scale}px`;
-    target.style.width = `${token.width * this.sceneRenderer.scale}px`;
-    target.style.height = `${token.height * this.sceneRenderer.scale}px`;
+    this.sceneRenderer.updateTokenElement(token);
 
     // Send update to server
     this.socket.emit('updateToken', {

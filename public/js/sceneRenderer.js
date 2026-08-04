@@ -1,47 +1,102 @@
 // public/js/sceneRenderer.js
 import { extractDominantColor } from './utils.js';
 
+const MIN_SCALE = 0.5;
+const MAX_SCALE = 5;
+
 export class SceneRenderer {
   constructor(container, isDM = false) {
     this.container = container;
     this.isDM = isDM;
     this.sceneId = null;
     this.tokens = [];
+
+    // Camera, in world units.
     this.scale = 1;
     this.offsetX = 0;
     this.offsetY = 0;
+
+    // Tokens are laid out once in world coordinates and share this parent, so
+    // the camera is one composited transform rather than a write per token.
+    this.world = document.createElement('div');
+    this.world.className = 'world';
+    this.container.appendChild(this.world);
+    this.applyCamera();
   }
+
+  // --- Camera ---
+
+  applyCamera() {
+    // Read right to left: translate in world units, then scale the result.
+    this.world.style.transform =
+      `scale(${this.scale}) translate(${this.offsetX}px, ${this.offsetY}px)`;
+  }
+
+  resetCamera() {
+    this.scale = 1;
+    this.offsetX = 0;
+    this.offsetY = 0;
+    this.applyCamera();
+  }
+
+  /** Pan by a distance measured in screen pixels. */
+  panBy(screenDX, screenDY) {
+    this.offsetX += screenDX / this.scale;
+    this.offsetY += screenDY / this.scale;
+    this.applyCamera();
+  }
+
+  /** Where a client-space point falls in the scene. */
+  screenToWorld(clientX, clientY) {
+    const rect = this.container.getBoundingClientRect();
+    return {
+      x: (clientX - rect.left) / this.scale - this.offsetX,
+      y: (clientY - rect.top) / this.scale - this.offsetY,
+    };
+  }
+
+  /** Zoom about a client-space point, keeping whatever is under it in place. */
+  zoomAt(clientX, clientY, factor) {
+    const { x: worldX, y: worldY } = this.screenToWorld(clientX, clientY);
+
+    // Derived from the old camera, so the container is only measured once.
+    const screenX = (worldX + this.offsetX) * this.scale;
+    const screenY = (worldY + this.offsetY) * this.scale;
+
+    this.scale = Math.min(Math.max(this.scale * factor, MIN_SCALE), MAX_SCALE);
+
+    this.offsetX = screenX / this.scale - worldX;
+    this.offsetY = screenY / this.scale - worldY;
+    this.applyCamera();
+  }
+
+  // --- Tokens ---
 
   renderScene(scene) {
     this.resetCamera();
-    this.container.innerHTML = ''; // Clear existing content
-
-    // Tracked here so tokens don't each have to carry a copy of the scene id.
+    this.clear();
     this.sceneId = scene.sceneId;
 
     // For DM, include all tokens; for players, include only visible tokens
     if (this.isDM) {
       this.tokens = scene.tokens;
     } else {
-      this.tokens = scene.tokens.filter(token => !token.hidden);
+      this.tokens = scene.tokens.filter((token) => !token.hidden);
     }
 
-    // Sort tokens by zIndex
     this.tokens.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+    this.tokens.forEach((token) => this.renderToken(token));
 
-    // Render tokens
-    this.tokens.forEach((token) => {
-      this.renderToken(token);
-    });
-
-    // Adjust background color based on tokens
     this.setBackgroundBasedOnTokens();
   }
 
+  clear() {
+    this.world.replaceChildren();
+    this.container.querySelector('.instructions')?.remove();
+  }
+
   renderToken(token) {
-    if (!this.isDM && token.hidden) {
-      return;
-    }
+    if (!this.isDM && token.hidden) return null;
 
     let element;
     if (token.mediaType === 'video') {
@@ -55,141 +110,86 @@ export class SceneRenderer {
       element.src = token.imageUrl;
     }
 
-    // Common properties
     element.id = `token-${token.tokenId}`;
     element.className = 'token';
-    element.style.position = 'absolute';
-    element.style.left = `${(token.x + this.offsetX) * this.scale}px`;
-    element.style.top = `${(token.y + this.offsetY) * this.scale}px`;
-    element.style.width = `${token.width * this.scale}px`;
-    element.style.height = `${token.height * this.scale}px`;
-    element.style.transform = `rotate(${token.rotation}deg)`;
-    element.style.zIndex = token.zIndex || 0;
     element.dataset.tokenId = token.tokenId;
+    element.draggable = false; // Disable default browser dragging
 
-    if (this.isDM && token.hidden) {
-      element.style.opacity = '0.5';
-    }
-
-    // Disable default browser dragging
-    element.draggable = false;
-
-    this.container.appendChild(element);
-
-    // Optionally, you can return the element if needed
+    this.world.appendChild(element);
+    this.updateTokenElement(token);
     return element;
   }
 
-  // Update all token elements
-  updateAllTokenElements() {
-    this.tokens.forEach((token) => {
-      if (!this.isDM && token.hidden) return; // Skip hidden tokens for players
-      this.updateTokenElement(token);
-    });
-  }
-
-  // Update a single token element's position and size
+  /** Write a token's world-space geometry. The camera is not involved. */
   updateTokenElement(token) {
     const element = document.getElementById(`token-${token.tokenId}`);
 
     if (!this.isDM && token.hidden) {
-      if (element && element.parentNode === this.container) {
-        this.container.removeChild(element);
-      }
+      element?.remove();
       return;
     }
 
-    if (element) {
-      // Update element style
-      element.style.left = `${(token.x + this.offsetX) * this.scale}px`;
-      element.style.top = `${(token.y + this.offsetY) * this.scale}px`;
-      element.style.width = `${token.width * this.scale}px`;
-      element.style.height = `${token.height * this.scale}px`;
-      element.style.transform = `rotate(${token.rotation}deg)`;
-      element.style.zIndex = token.zIndex || 0;
-
-      if (this.isDM && token.hidden) {
-        element.style.opacity = '0.5';
-      } else {
-        element.style.opacity = '1';
-      }
-    } else if (!token.hidden || this.isDM) {
-      // Token element doesn't exist, create it if it's not hidden
+    if (!element) {
       this.renderToken(token);
-      // Optionally set up token interactions
+      return;
     }
+
+    element.style.left = `${token.x}px`;
+    element.style.top = `${token.y}px`;
+    element.style.width = `${token.width}px`;
+    element.style.height = `${token.height}px`;
+    element.style.transform = `rotate(${token.rotation || 0}deg)`;
+    element.style.zIndex = token.zIndex || 0;
+    element.style.opacity = this.isDM && token.hidden ? '0.5' : '1';
   }
 
-  resetCamera() {
-    this.scale = 1;
-    this.offsetX = 0;
-    this.offsetY = 0;
+  removeTokenElement(tokenId) {
+    document.getElementById(`token-${tokenId}`)?.remove();
   }
 
-  // Adjust background color based on the largest token (image or video)
+  /** Tint the backdrop from the largest token, so a map blends into the page. */
   setBackgroundBasedOnTokens() {
-    // Find the largest token by area, regardless of whether it's an image or video
-    let largestToken = null;
-    if (this.tokens.length > 0) {
-      largestToken = this.tokens.reduce((prev, current) => {
-        return prev.width * prev.height > current.width * current.height ? prev : current;
-      });
+    if (this.tokens.length === 0) return;
+
+    const largest = this.tokens.reduce((prev, current) =>
+      prev.width * prev.height > current.width * current.height ? prev : current
+    );
+
+    if (largest.mediaType !== 'video') {
+      extractDominantColor(largest.imageUrl)
+        .then((color) => {
+          this.container.style.backgroundColor = color;
+        })
+        .catch((err) => {
+          console.error('Error extracting dominant color for image:', err);
+        });
+      return;
     }
 
-    if (largestToken) {
-      if (largestToken.mediaType !== 'video') {
-        // If the largest token is an image, extract the dominant color from the image
-        extractDominantColor(largestToken.imageUrl)
-          .then((color) => {
-            // Set the background color of the scene container
-            this.container.style.backgroundColor = color;
-          })
-          .catch((err) => {
-            console.error('Error extracting dominant color for image:', err);
-          });
-      } else {
-        // If the largest token is a video, create a temporary video element to extract the first frame
-        const video = document.createElement('video');
-        video.src = largestToken.imageUrl;
-        video.crossOrigin = 'Anonymous'; // May be needed for CORS
-        video.muted = true; // Mute the video to avoid autoplay issues
+    // A video has no still to sample, so play a frame into a canvas and read it.
+    const video = document.createElement('video');
+    video.src = largest.imageUrl;
+    video.crossOrigin = 'Anonymous';
+    video.muted = true;
 
-        // Set up an event listener for when the video is ready to play
-        video.oncanplay = () => {
-          // Play the video briefly to make sure we get a non-black frame
-          video.play();
+    video.oncanplay = () => {
+      video.play();
 
-          // Wait a short amount of time (e.g., 1 second) to allow the video to display
-          setTimeout(() => {
-            // Create a canvas to capture the first visible frame
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
+      // Let it get past the opening black frame before sampling.
+      setTimeout(() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
 
-            // Ensure the canvas matches the video size
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            // Draw the current frame of the video onto the canvas
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+        this.container.style.backgroundColor = `rgb(${r},${g},${b})`;
+        video.pause();
+      }, 1000);
+    };
 
-            // Get the pixel data from the canvas (top-left corner)
-            const imageData = ctx.getImageData(0, 0, 1, 1); // Get the color of the top-left pixel
-            const [r, g, b] = imageData.data;
-
-            // Format the color as an RGB string
-            const dominantColor = `rgb(${r},${g},${b})`;
-
-            // Set the background color of the scene container
-            this.container.style.backgroundColor = dominantColor;
-
-            // Pause the video after capturing the frame
-            video.pause();
-          }, 1000); // 1 second delay before capturing the frame
-        };
-
-        // Start loading the video
-        video.load();
-      }
-    }
+    video.load();
   }
 }

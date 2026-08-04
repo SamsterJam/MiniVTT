@@ -171,9 +171,6 @@ export class SceneManager {
         element.addEventListener('click', (event) => this.onTokenClick(event, token.tokenId));
       }
     });
-
-    // Update the background color based on tokens
-    this.sceneRenderer.setBackgroundBasedOnTokens();
   }
 
   onTokenClick(event, tokenId) {
@@ -397,11 +394,7 @@ export class SceneManager {
       const token = this.currentScene.tokens[tokenIndex];
       // Remove from currentScene.tokens
       this.currentScene.tokens.splice(tokenIndex, 1);
-      // Remove from DOM
-      const element = document.getElementById(`token-${this.selectedTokenId}`);
-      if (element) {
-        this.sceneContainer.removeChild(element);
-      }
+      this.sceneRenderer.removeTokenElement(this.selectedTokenId);
       // Notify server
       this.socket.emit('removeToken', {
         sceneId: this.currentScene.sceneId,
@@ -448,7 +441,7 @@ export class SceneManager {
           alert('Scene deleted successfully.');
           // Clear the current scene and tokens
           this.currentScene = null;
-          this.sceneContainer.innerHTML = '';
+          this.sceneRenderer.clear();
           // Update the scene list
           this.fetchSceneList();
         } else {
@@ -484,11 +477,7 @@ export class SceneManager {
     if (tokenIndex !== -1) {
       // Remove from currentScene.tokens
       this.currentScene.tokens.splice(tokenIndex, 1);
-      // Remove from DOM
-      const element = document.getElementById(`token-${tokenId}`);
-      if (element && element.parentNode === this.sceneContainer) {
-        this.sceneContainer.removeChild(element);
-      }
+      this.sceneRenderer.removeTokenElement(tokenId);
       // If the removed token was selected, unselect it
       if (this.selectedTokenId === tokenId) {
         this.selectedTokenId = null;
@@ -500,7 +489,7 @@ export class SceneManager {
     // If the current scene has been deleted, clear it from the UI
     if (this.currentScene && this.currentScene.sceneId === sceneId) {
       this.currentScene = null;
-      this.sceneContainer.innerHTML = '';
+      this.sceneRenderer.clear();
     }
     // Update the scene list
     this.fetchSceneList();
@@ -556,10 +545,8 @@ export class SceneManager {
       const imageUrl = data.imageUrl;
       const mediaType = data.mediaType;
 
-      // Get the drop position relative to the scene container
-      const rect = this.sceneContainer.getBoundingClientRect();
-      const x = (event.clientX - rect.left) / this.sceneRenderer.scale - this.sceneRenderer.offsetX;
-      const y = (event.clientY - rect.top) / this.sceneRenderer.scale - this.sceneRenderer.offsetY;
+      // Get the drop position in scene coordinates
+      const { x, y } = this.sceneRenderer.screenToWorld(event.clientX, event.clientY);
 
       let width, height;
 

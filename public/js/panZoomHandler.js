@@ -1,22 +1,24 @@
 // public/js/panZoomHandler.js
 
+// Exponential in wheel delta, with the step growing as you zoom in.
+const ZOOM_INTENSITY = 0.00035;
+
 export class PanZoomHandler {
   constructor(container, sceneRenderer) {
     this.container = container;
     this.sceneRenderer = sceneRenderer;
 
     this.isPanning = false;
-    this.startX = 0;
-    this.startY = 0;
+    this.lastX = 0;
+    this.lastY = 0;
 
     this.setupEventListeners();
   }
 
   setupEventListeners() {
-    // Zooming with mouse wheel
     this.container.addEventListener('wheel', (event) => this.onWheel(event), { passive: false });
 
-    // Panning with middle mouse button
+    // Tracked on the document so a pan survives the pointer leaving the container.
     this.container.addEventListener('mousedown', (event) => this.onMouseDown(event));
     document.addEventListener('mousemove', (event) => this.onMouseMove(event));
     document.addEventListener('mouseup', (event) => this.onMouseUp(event));
@@ -24,66 +26,28 @@ export class PanZoomHandler {
 
   onWheel(event) {
     event.preventDefault();
-
-    const rect = this.container.getBoundingClientRect();
-
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-
-    // Calculate the mouse position in scene (world) coordinates before scaling
-    const mouseSceneX = (mouseX / this.sceneRenderer.scale) - this.sceneRenderer.offsetX;
-    const mouseSceneY = (mouseY / this.sceneRenderer.scale) - this.sceneRenderer.offsetY;
-
-    // Adjust the scale
-    const baseZoomIntensity = 0.00035; // Base zoom intensity
-    // Adjust intensity proportionally to current scale
-    const zoomIntensity = baseZoomIntensity * this.sceneRenderer.scale;
-
-    const delta = event.deltaY;
-    const zoom = Math.exp(-delta * zoomIntensity);
-
-    this.sceneRenderer.scale *= zoom;
-    // Limit to reasonable bounds
-    this.sceneRenderer.scale = Math.min(Math.max(this.sceneRenderer.scale, 0.5), 5);
-
-    // After adjusting the scale, recalculate the offsets so that the mouse scene position stays under the mouse pointer
-    this.sceneRenderer.offsetX = (mouseX / this.sceneRenderer.scale) - mouseSceneX;
-    this.sceneRenderer.offsetY = (mouseY / this.sceneRenderer.scale) - mouseSceneY;
-
-    // Update all token positions
-    this.sceneRenderer.updateAllTokenElements();
+    const intensity = ZOOM_INTENSITY * this.sceneRenderer.scale;
+    this.sceneRenderer.zoomAt(event.clientX, event.clientY, Math.exp(-event.deltaY * intensity));
   }
 
   onMouseDown(event) {
-    if (event.button === 1) {
-      // Middle mouse button
-      this.isPanning = true;
-      this.startX = event.clientX;
-      this.startY = event.clientY;
-      event.preventDefault(); // Prevent default middle mouse behavior
-    }
+    if (event.button !== 1) return; // middle mouse button
+    this.isPanning = true;
+    this.lastX = event.clientX;
+    this.lastY = event.clientY;
+    event.preventDefault();
   }
 
   onMouseMove(event) {
-    if (this.isPanning) {
-      const deltaX = (event.clientX - this.startX) / this.sceneRenderer.scale;
-      const deltaY = (event.clientY - this.startY) / this.sceneRenderer.scale;
-
-      this.sceneRenderer.offsetX += deltaX;
-      this.sceneRenderer.offsetY += deltaY;
-
-      this.startX = event.clientX;
-      this.startY = event.clientY;
-
-      // Update all token positions
-      this.sceneRenderer.updateAllTokenElements();
-    }
+    if (!this.isPanning) return;
+    this.sceneRenderer.panBy(event.clientX - this.lastX, event.clientY - this.lastY);
+    this.lastX = event.clientX;
+    this.lastY = event.clientY;
   }
 
   onMouseUp(event) {
-    if (event.button === 1 && this.isPanning) { // Middle mouse button
-      this.isPanning = false;
-      event.preventDefault();
-    }
+    if (event.button !== 1 || !this.isPanning) return;
+    this.isPanning = false;
+    event.preventDefault();
   }
 }
