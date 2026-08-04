@@ -6,6 +6,7 @@ const app = require('./app');
 const config = require('./config');
 const Scene = require('./models/sceneModel');
 const Music = require('./models/musicModel');
+const Settings = require('./models/settingsModel');
 
 const server = http.createServer(app);
 const io = new Server(server);
@@ -20,6 +21,7 @@ async function start() {
   // Read every scene up front; the model relies on holding all of them.
   await Scene.load();
   await Music.load();
+  await Settings.load();
 
   server.listen(config.port, () => {
     console.log(`MiniVTT is running on port ${config.port}`);

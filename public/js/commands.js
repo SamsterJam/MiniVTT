@@ -7,6 +7,7 @@
 //   bar             show it in the selection bar, in this order
 //   needsSelection  ignore it while nothing is selected
 //   active(tokens)  the toggle is lit when this holds for every selected token
+//   overlay         it opens an overlay, so its key still works inside one
 //   doc             documentation only; there is nothing to run
 
 import { eyeOff, players, layerUp, layerDown, duplicate, trash } from './icons.js';
@@ -88,13 +89,31 @@ export const COMMANDS = [
   // --- View ---
   { group: 'View', key: 't', label: 'Toggle toolbar', run: (app) => app.toggleToolbar() },
   { group: 'View', key: 'm', label: 'Toggle music panel', run: (app) => app.toggleMusic() },
-  { group: 'View', key: '?', label: 'Toggle this list', run: (app) => app.toggleHelp() },
+  {
+    group: 'View',
+    key: ',',
+    label: 'Toggle settings',
+    overlay: true,
+    run: (app) => app.toggleSettings(),
+  },
+  {
+    group: 'View',
+    key: '?',
+    label: 'Toggle this list',
+    overlay: true,
+    run: (app) => app.toggleHelp(),
+  },
   { group: 'View', key: 'Wheel', label: 'Zoom', doc: true },
   { group: 'View', key: 'Middle drag', label: 'Pan', doc: true },
   { group: 'View', key: 'Drop files', label: 'Add tokens or music', doc: true },
 ];
 
 export const BAR_COMMANDS = COMMANDS.filter((command) => command.bar);
+
+// The only keys an open overlay lets past: the ones that close it again.
+export const OVERLAY_KEYS = new Set(
+  COMMANDS.filter((command) => command.overlay).map((command) => command.key)
+);
 
 /**
  * Name the combo an event represents. Shift only prefixes keys whose identity

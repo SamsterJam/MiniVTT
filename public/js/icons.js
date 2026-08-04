@@ -17,6 +17,16 @@ export const music = icon(
   '<path d="M20 3v12.75a3.25 3.25 0 1 1-2-3V8.3l-8 1.6v7.85a3.25 3.25 0 1 1-2-3V6.6z"/>'
 );
 
+const tooth = (deg) =>
+  `<rect x="10.3" y="1.5" width="3.4" height="6" rx="0.8" transform="rotate(${deg} 12 12)"/>`;
+
+// A ring with its middle punched out by the fill rule, and eight teeth spun
+// around the box.
+export const settings = icon(
+  '<path d="M12 4.4a7.6 7.6 0 1 1 0 15.2 7.6 7.6 0 0 1 0-15.2zm0 4.2a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8z"/>' +
+    [0, 45, 90, 135, 180, 225, 270, 315].map(tooth).join('')
+);
+
 export const help = icon(
   '<path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 2a8 8 0 1 1 0 16 8 8 0 0 1 0-16z"/>' +
     '<path d="M12 6.2c-1.8 0-3 .9-3.5 2.5l1.9.7c.2-.8.7-1.3 1.5-1.3.8 0 1.3.4 1.3 1.1 0 .5-.2.8-.9 1.3-1 .7-1.5 1.3-1.5 2.6v.4h2v-.3c0-.6.2-.8.8-1.2 1-.7 1.6-1.4 1.6-2.7 0-1.8-1.4-3.1-3.2-3.1z"/>' +
@@ -25,6 +35,14 @@ export const help = icon(
 
 export const close = icon(
   '<path d="M6.4 5 12 10.6 17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19 5 17.6 10.6 12 5 6.4z"/>'
+);
+
+// --- Announcements ---
+
+export const scene = icon(
+  '<path d="M2.5 4h19A1.5 1.5 0 0 1 23 5.5v13a1.5 1.5 0 0 1-1.5 1.5h-19A1.5 1.5 0 0 1 1 18.5v-13A1.5 1.5 0 0 1 2.5 4zM3 6v12h18V6z"/>' +
+    '<path d="M6.8 7.5a1.7 1.7 0 1 1 0 3.4 1.7 1.7 0 0 1 0-3.4z"/>' +
+    '<path d="M3 18h18l-7.5-5-3 2.5L7 12l-4 4z"/>'
 );
 
 // --- Token actions ---

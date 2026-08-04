@@ -1,12 +1,17 @@
 // models/musicModel.js
 const path = require('path');
 const fs = require('fs').promises;
+const Settings = require('./settingsModel');
 
 const MUSIC_DIR = path.join(__dirname, '..', 'public', 'music');
 const NAMES_FILE = path.join(__dirname, '..', 'data', 'musicNames.json');
 const AUDIO_EXTENSIONS = new Set(['.mp3', '.wav', '.ogg', '.m4a', '.flac']);
 const DEFAULT_VOLUME = 0.125; // what the DM's slider sits at when it is halfway
 const MAX_NAME = 200;
+
+// A tenth of the slider's travel, cubed the way musicManager bends it. Below
+// that a track is being slipped in, not started.
+const QUIET_VOLUME = 0.1 ** 3;
 
 // Drop the upload's timestamp prefix and extension.
 const displayName = (filename) =>
@@ -122,6 +127,9 @@ class MusicModel {
     track.playing = true;
     track.startedAt = Date.now();
     this.broadcast();
+
+    // Only a start is news; every other broadcast is bookkeeping.
+    if (track.volume >= QUIET_VOLUME) Settings.announce('music', track.name);
   }
 
   pause(trackId) {

@@ -174,3 +174,102 @@ body {
 #enable-audio-button span {
   font-size: 22px;
 }
+
+/* --- Announcements (player view) ---
+   A title card, not a notification: said once in the middle of the screen and
+   then gone. Fade in, hold, and fade out are one animation. */
+
+#announcements {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Off dead center: the middle of the screen is where the map is. */
+  padding-bottom: 12vh;
+
+  /* Never takes a click that belonged to the map. */
+  pointer-events: none;
+}
+
+.announcement {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  max-width: min(680px, 84vw);
+
+  /* The padding is room for the scrim to fade out in, so it reads as a
+     darkening rather than a box. Invisible over a dark map, legibility over
+     a bright one. */
+  padding: 40px 80px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0.5),
+    rgba(0, 0, 0, 0.26) 46%,
+    transparent 72%
+  );
+  text-align: center;
+
+  /* Four tenths in, a beat to read it, most of a second to dissolve. */
+  animation: announce 2.4s var(--ease) both;
+}
+
+@keyframes announce {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  18% {
+    opacity: 1;
+    transform: none;
+  }
+  /* Holds until here, then dissolves: ease-in so it lingers before it goes. */
+  65% {
+    opacity: 1;
+    transform: none;
+    animation-timing-function: ease-in;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-7px) scale(1.015);
+  }
+}
+
+/* The panel headers' label, tracked wider for a title. Full strength, not
+   dimmed: at 11px over artwork, dim text loses to its own shadow. */
+.announcement-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 7px rgba(0, 0, 0, 0.6);
+}
+
+/* Takes the label's color; the two are one line. */
+.announcement-icon {
+  display: flex;
+  flex: none;
+}
+
+.announcement-icon svg {
+  display: block;
+  width: 13px;
+  height: 13px;
+}
+
+/* The shadow is legibility over artwork, so it is a halo, not a drop. */
+.announcement-name {
+  font-size: clamp(26px, 3.6vw, 40px);
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  text-wrap: balance;
+  text-shadow: 0 2px 22px rgba(0, 0, 0, 0.8), 0 1px 4px rgba(0, 0, 0, 0.55);
+}

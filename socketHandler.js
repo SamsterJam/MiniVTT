@@ -1,12 +1,14 @@
 // socketHandler.js
 const Scene = require('./models/sceneModel');
 const Music = require('./models/musicModel');
+const Settings = require('./models/settingsModel');
 const session = require('./session');
 
 module.exports = (io) => {
   io.engine.use(session);
   Scene.attach(io);
   Music.attach(io);
+  Settings.attach(io);
 
   // The page asks for a role, the session decides whether it gets it. Asking
   // alone proves nothing, but it lets a DM open the player view as a player.
@@ -25,7 +27,10 @@ module.exports = (io) => {
     // Everything the page needs to draw itself, so it never has to ask.
     socket.emit('sceneData', Scene.sceneFor(Scene.activeSceneId, socket.isDM));
     socket.emit('musicState', Music.state());
-    if (socket.isDM) socket.emit('sceneList', Scene.listScenes());
+    if (socket.isDM) {
+      socket.emit('sceneList', Scene.listScenes());
+      socket.emit('settings', Settings.state());
+    }
 
     // Open to players too; the model decides what they may actually touch.
     socket.on('updateToken', ({ sceneId, tokenId, properties } = {}) => {
@@ -67,5 +72,7 @@ module.exports = (io) => {
     socket.on('renameTrack', ({ trackId, name } = {}) => Music.rename(trackId, name));
     socket.on('reorderTracks', ({ trackOrder } = {}) => Music.reorder(trackOrder));
     socket.on('deleteTrack', ({ trackId } = {}) => Music.remove(trackId));
+
+    socket.on('setSetting', ({ key, value } = {}) => Settings.set(key, value));
   });
 };

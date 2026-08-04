@@ -1,6 +1,6 @@
 // public/js/sceneManager.js
-import { confirmDialog, promptDialog, toast, contextMenu } from './ui.js';
-import { COMMANDS, BAR_COMMANDS, comboFor, keyLabel } from './commands.js';
+import { confirmDialog, promptDialog, toast, contextMenu, openDialog } from './ui.js';
+import { COMMANDS, BAR_COMMANDS, OVERLAY_KEYS, comboFor, keyLabel } from './commands.js';
 
 const MAX_TOKEN_DIMENSION = 200;
 
@@ -547,10 +547,21 @@ export class SceneManager {
     document.body.classList.toggle('music-hidden');
   }
 
+  /** One overlay at a time: opening either one closes whatever is already up. */
+  toggleDialog(id) {
+    const dialog = document.getElementById(id);
+    const wasOpen = dialog.open;
+
+    document.querySelector('dialog[open]')?.close();
+    if (!wasOpen) openDialog(dialog);
+  }
+
   toggleHelp() {
-    const dialog = document.getElementById('help-dialog');
-    if (dialog.open) dialog.close();
-    else dialog.showModal();
+    this.toggleDialog('help-dialog');
+  }
+
+  toggleSettings() {
+    this.toggleDialog('settings-dialog');
   }
 
   // --- Keyboard ---
@@ -559,7 +570,9 @@ export class SceneManager {
     // Never steal a keystroke that belongs to a form control or an open dialog.
     const { target } = event;
     if (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
-    if (document.querySelector('dialog[open]') && event.key !== '?') return;
+
+    const combo = comboFor(event);
+    if (document.querySelector('dialog[open]') && !OVERLAY_KEYS.has(combo)) return;
 
     // Arrows repeat and take a modifier, so they sit outside the command table.
     const step = NUDGE * (event.shiftKey ? NUDGE_BOOST : 1);
@@ -577,7 +590,6 @@ export class SceneManager {
       return;
     }
 
-    const combo = comboFor(event);
     const command = COMMANDS.find((entry) => !entry.doc && entry.key === combo);
     if (!command) return;
     if (command.needsSelection && this.selection.size === 0) return;

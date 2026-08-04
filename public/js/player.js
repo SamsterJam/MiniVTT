@@ -4,6 +4,7 @@ import { SceneRenderer } from './sceneRenderer.js';
 import { PanZoomHandler } from './panZoomHandler.js';
 import { TokenManager } from './tokenManager.js';
 import { MusicPlayer } from './musicPlayer.js';
+import { announce } from './announcements.js';
 
 const socket = io();
 
@@ -56,6 +57,11 @@ socket.on('removeToken', ({ sceneId, tokenId }) => {
 const musicPlayer = new MusicPlayer();
 
 socket.on('musicState', (tracks) => musicPlayer.sync(tracks));
+
+// === Announcements ===
+// Sent only when the DM has switched them on.
+
+socket.on('announce', announce);
 
 // Browsers block audio until the page has been interacted with.
 document.getElementById('enable-audio-button').addEventListener('click', () => {

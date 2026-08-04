@@ -4,6 +4,37 @@
 
 const TOAST_MS = 4200;
 
+// --- Dialog behaviour ---
+// What <dialog> does not do by itself.
+
+// Which kind of press came last, since only the keyboard wants its focus back.
+let fromPointer = false;
+document.addEventListener('pointerdown', () => (fromPointer = true), true);
+document.addEventListener('keydown', () => (fromPointer = false), true);
+
+/** Show a dialog modally. The browser owns Escape, focus, and the backdrop. */
+export function openDialog(dialog) {
+  // Closing hands focus back to whatever opened this, and the ring lights up
+  // on it either way. If the pointer put it there, drop it first.
+  if (fromPointer) document.activeElement?.blur();
+  dialog.showModal();
+}
+
+/**
+ * Close a dialog on a click outside its card, the same as Escape. Press and
+ * release both have to land on the backdrop, or dragging a selection out of
+ * the card would dismiss it.
+ */
+export function dismissOnBackdrop(dialog) {
+  let onBackdrop = false;
+
+  // The backdrop is the dialog's own box; anything in the card is a child.
+  dialog.addEventListener('mousedown', (event) => (onBackdrop = event.target === dialog));
+  dialog.addEventListener('click', (event) => {
+    if (onBackdrop && event.target === dialog) dialog.close();
+  });
+}
+
 /**
  * A modal card. Actions render in reverse, so the confirming button is first in
  * the DOM -- the one Enter submits -- while still sitting on the right.
@@ -12,6 +43,7 @@ function card(html) {
   const dialog = document.createElement('dialog');
   dialog.innerHTML = `<form method="dialog" class="dialog-card surface">${html}</form>`;
   dialog.addEventListener('close', () => dialog.remove());
+  dismissOnBackdrop(dialog); // dismissing is a cancel, as Escape is
   document.body.append(dialog);
   return dialog;
 }
@@ -35,7 +67,7 @@ export function confirmDialog({ title, body = '', confirm = 'Confirm', danger = 
 
   return new Promise((resolve) => {
     dialog.addEventListener('close', () => resolve(dialog.returnValue === 'ok'), { once: true });
-    dialog.showModal();
+    openDialog(dialog);
   });
 }
 
@@ -63,7 +95,7 @@ export function promptDialog({ title, value = '', placeholder = '', confirm = 'S
       () => resolve(dialog.returnValue === 'ok' ? input.value.trim() || null : null),
       { once: true }
     );
-    dialog.showModal();
+    openDialog(dialog);
     input.select();
   });
 }

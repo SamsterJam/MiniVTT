@@ -38,6 +38,7 @@
       </div>
       <div class="sep"></div>
       <button id="music-toggle" class="btn icon" title="Music panel  (M)"></button>
+      <button id="settings-toggle" class="btn icon" title="Settings  (,)"></button>
       <button id="help-toggle" class="btn icon" title="Shortcuts  (?)"></button>
     </div>
   </header>
@@ -56,6 +57,18 @@
     </ul>
     <div id="music-drop-area">Drop audio here, or click to browse</div>
   </aside>
+
+  <dialog id="settings-dialog">
+    <form method="dialog" class="dialog-card surface">
+      <h2>Settings</h2>
+      <div id="setting-groups">
+        <!-- Generated from the settings table at runtime -->
+      </div>
+      <div class="dialog-actions">
+        <button class="btn primary" value="ok">Close</button>
+      </div>
+    </form>
+  </dialog>
 
   <dialog id="help-dialog">
     <form method="dialog" class="dialog-card surface">

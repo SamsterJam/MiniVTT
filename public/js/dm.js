@@ -1,11 +1,13 @@
 // public/js/dm.js
 import { SceneManager } from './sceneManager.js';
 import { MusicManager } from './musicManager.js';
+import { SettingsManager } from './settingsManager.js';
 import { SceneRenderer } from './sceneRenderer.js';
 import { PanZoomHandler } from './panZoomHandler.js';
 import { TokenManager } from './tokenManager.js';
 import { COMMANDS, keyLabel } from './commands.js';
-import { plus, music, help, close } from './icons.js';
+import { dismissOnBackdrop } from './ui.js';
+import { plus, music, settings, help, close } from './icons.js';
 
 /** Draw the shortcut overlay from the command table, grouped as declared. */
 function buildShortcutList(container) {
@@ -58,24 +60,32 @@ document.addEventListener('DOMContentLoaded', () => {
   const musicManager = new MusicManager(socket);
   musicManager.attachDropTarget(document.getElementById('music-drop-area'));
 
+  new SettingsManager(socket);
+
   // --- Chrome ---
 
   const createButton = document.getElementById('create-scene-button');
   const musicButton = document.getElementById('music-toggle');
+  const settingsButton = document.getElementById('settings-toggle');
   const helpButton = document.getElementById('help-toggle');
   const musicClose = document.getElementById('music-close');
 
   createButton.innerHTML = plus;
   musicButton.innerHTML = music;
+  settingsButton.innerHTML = settings;
   helpButton.innerHTML = help;
   musicClose.innerHTML = close;
 
   createButton.addEventListener('click', () => sceneManager.promptNewScene());
+  settingsButton.addEventListener('click', () => sceneManager.toggleSettings());
   helpButton.addEventListener('click', () => sceneManager.toggleHelp());
   musicButton.addEventListener('click', () => sceneManager.toggleMusic());
   musicClose.addEventListener('click', () => sceneManager.toggleMusic());
 
   buildShortcutList(document.querySelector('#help-dialog .shortcut-groups'));
+
+  // The cards ui.js builds wire themselves; these two are in the markup.
+  for (const dialog of document.querySelectorAll('dialog')) dismissOnBackdrop(dialog);
 
   // A dot for when the panel is closed over a playing track. CSS hides it
   // again once the panel is open to speak for itself.

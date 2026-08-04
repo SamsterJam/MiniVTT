@@ -1,6 +1,7 @@
 // models/sceneModel.js
 const path = require('path');
 const fs = require('fs').promises;
+const Settings = require('./settingsModel');
 
 const SCENES_DIR = path.join(__dirname, '..', 'data', 'scenes');
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
@@ -213,9 +214,15 @@ class SceneModel {
   }
 
   setActiveScene(sceneId) {
-    if (!this.scenes[sceneId]) return;
+    const scene = this.scenes[sceneId];
+    if (!scene) return;
+
+    const arrived = this.activeSceneId !== sceneId;
     this.activeSceneId = sceneId;
     this.broadcastScene(sceneId);
+
+    // Reselecting the scene already on the table is a refresh, not an arrival.
+    if (arrived) Settings.announce('scene', scene.sceneName);
   }
 
   async deleteScene(sceneId) {
