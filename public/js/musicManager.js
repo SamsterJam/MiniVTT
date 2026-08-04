@@ -45,19 +45,23 @@ export class MusicManager {
       this.rows.delete(trackId);
     }
 
-    for (const track of this.tracks) {
+    this.tracks.forEach((track, index) => {
       let row = this.rows.get(track.trackId);
       if (!row) {
         row = this.createRow(track.trackId);
         this.rows.set(track.trackId, row);
       }
       this.updateRow(row, track);
-      this.listElement.appendChild(row.item); // also keeps the order right
-    }
+
+      // Only move a row that is out of place. Re-inserting one that is already
+      // correct would cancel a drag in progress on its slider.
+      const occupant = this.listElement.children[index];
+      if (occupant !== row.item) this.listElement.insertBefore(row.item, occupant ?? null);
+    });
   }
 
   createRow(trackId) {
-    const row = { trackId, adjusting: false };
+    const row = { trackId };
 
     row.name = document.createElement('span');
     row.name.className = 'track-name';
@@ -81,18 +85,17 @@ export class MusicManager {
       VOLUME_INTERVAL
     );
 
+    // A drag owns the track's volume until it ends: local audio moves now and
+    // everyone else follows at the throttled rate.
     row.slider.addEventListener('input', () => {
-      row.adjusting = true;
-      const volume = toVolume(Number(row.slider.value));
+      this.player.holding.add(trackId);
 
-      // Local audio moves now; everyone else follows at the throttled rate.
+      const volume = toVolume(Number(row.slider.value));
       const audio = this.player.elements.get(trackId);
       if (audio) audio.volume = volume;
       sendVolume(volume);
     });
-    row.slider.addEventListener('change', () => {
-      row.adjusting = false;
-    });
+    row.slider.addEventListener('change', () => this.player.holding.delete(trackId));
 
     const deleteButton = document.createElement('button');
     deleteButton.className = 'delete-button';
@@ -116,11 +119,16 @@ export class MusicManager {
   updateRow(row, track) {
     row.name.textContent = track.name;
     row.name.title = track.name;
-    row.playButton.innerHTML = track.playing ? pause : play;
-    row.playButton.title = track.playing ? 'Pause' : 'Play';
+
+    // Reparsing the icon on every state would churn the DOM 16 times a second.
+    if (row.playing !== track.playing) {
+      row.playing = track.playing;
+      row.playButton.innerHTML = track.playing ? pause : play;
+      row.playButton.title = track.playing ? 'Pause' : 'Play';
+    }
 
     // Never fight a slider that is currently being moved.
-    if (!row.adjusting) row.slider.value = toSlider(track.volume);
+    if (!this.player.holding.has(track.trackId)) row.slider.value = toSlider(track.volume);
   }
 
   // --- Uploading ---

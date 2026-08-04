@@ -12,6 +12,9 @@ export class MusicPlayer {
     this.elements = new Map(); // trackId -> HTMLAudioElement
     this.tracks = [];
     this.receivedAt = 0;
+    // Tracks whose volume the user is driving right now; their echoed value is
+    // a throttle window out of date, so applying it would fight the drag.
+    this.holding = new Set();
     // Browsers block audio until the page has been interacted with.
     this.enabled = false;
 
@@ -38,7 +41,7 @@ export class MusicPlayer {
   apply() {
     for (const track of this.tracks) {
       const audio = this.elementFor(track);
-      audio.volume = track.volume;
+      if (!this.holding.has(track.trackId)) audio.volume = track.volume;
       this.seek(audio, track);
 
       if (track.playing) {
@@ -56,6 +59,7 @@ export class MusicPlayer {
       audio.pause();
       audio.src = '';
       this.elements.delete(trackId);
+      this.holding.delete(trackId);
     }
   }
 
