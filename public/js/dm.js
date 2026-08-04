@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const musicManager = new MusicManager(socket);
   musicManager.attachDropTarget(document.getElementById('music-drop-area'));
-  musicManager.loadTracks();
 
   document.getElementById('create-scene-button').addEventListener('click', () => {
     const sceneName = prompt('Enter a name for the new scene:');

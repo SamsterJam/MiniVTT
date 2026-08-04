@@ -1,5 +1,30 @@
 // public/js/utils.js
 
+/** Rate-limit a function, always delivering the final call. */
+export function throttle(fn, interval) {
+  let lastRun = 0;
+  let timer = null;
+  let pending = null;
+
+  return (...args) => {
+    pending = args;
+    const wait = interval - (Date.now() - lastRun);
+
+    if (wait <= 0) {
+      lastRun = Date.now();
+      fn(...pending);
+      pending = null;
+    } else if (!timer) {
+      timer = setTimeout(() => {
+        timer = null;
+        lastRun = Date.now();
+        if (pending) fn(...pending);
+        pending = null;
+      }, wait);
+    }
+  };
+}
+
 export function extractDominantColor(imageUrl) {
   return new Promise((resolve, reject) => {
     const img = new Image();

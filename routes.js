@@ -54,8 +54,6 @@ router.post('/updateSceneOrder', requireDM, sceneController.updateSceneOrder);
 // --- Media ---
 
 router.post('/upload', requireDM, uploadController.uploadFile);
-router.get('/musicList', musicController.getMusicList); // players need the list too
 router.post('/uploadMusic', requireDM, musicController.uploadMusic);
-router.post('/deleteMusic', requireDM, musicController.deleteMusic);
 
 module.exports = router;

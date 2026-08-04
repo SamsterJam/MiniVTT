@@ -1,16 +1,14 @@
 // socketHandler.js
 const Scene = require('./models/sceneModel');
+const Music = require('./models/musicModel');
 const session = require('./session');
-
-// Playback state still lives in the DM's browser; the server only relays.
-const MUSIC_EVENTS = ['addTrack', 'playTrack', 'pauseTrack', 'setTrackVolume', 'deleteTrack'];
 
 module.exports = (io) => {
   io.engine.use(session);
+  Music.attach(io);
 
   // The page asks for a role, the session decides whether it gets it. Asking
-  // alone proves nothing, but it lets a DM open the player view in the same
-  // browser and be treated as a genuine player there.
+  // alone proves nothing, but it lets a DM open the player view as a player.
   io.use((socket, next) => {
     const wantsDM = socket.handshake.query.role === 'dm';
     socket.isDM = wantsDM && Boolean(socket.request.session?.isDM);
@@ -24,6 +22,7 @@ module.exports = (io) => {
     socket.on('disconnect', () => console.log(`${role} disconnected (${socket.id})`));
 
     socket.emit('activeSceneId', Scene.activeSceneId);
+    socket.emit('musicState', Music.state());
 
     socket.on('loadScene', ({ sceneId } = {}) => {
       const scene = Scene.sceneFor(sceneId, socket.isDM);
@@ -50,8 +49,9 @@ module.exports = (io) => {
       Scene.removeToken(sceneId, tokenId, socket)
     );
 
-    for (const event of MUSIC_EVENTS) {
-      socket.on(event, (data) => socket.broadcast.emit(event, data));
-    }
+    socket.on('playTrack', ({ trackId } = {}) => Music.play(trackId));
+    socket.on('pauseTrack', ({ trackId } = {}) => Music.pause(trackId));
+    socket.on('setTrackVolume', ({ trackId, volume } = {}) => Music.setVolume(trackId, volume));
+    socket.on('deleteTrack', ({ trackId } = {}) => Music.remove(trackId));
   });
 };

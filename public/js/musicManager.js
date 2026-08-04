@@ -1,154 +1,126 @@
 // public/js/musicManager.js
 import { play, pause, trash } from './icons.js';
+import { throttle } from './utils.js';
+import { MusicPlayer } from './musicPlayer.js';
 
 // Perceived loudness follows a curve, so a linear slider needs bending first.
 const VOLUME_CURVE = 3;
-const DEFAULT_SLIDER = 50;
 const toVolume = (slider) => (slider / 100) ** VOLUME_CURVE;
+const toSlider = (volume) => Math.round(volume ** (1 / VOLUME_CURVE) * 100);
+
+// Fast enough for a fade to sound continuous, slow enough not to flood.
+const VOLUME_INTERVAL = 60;
 
 export class MusicManager {
   constructor(socket) {
     this.socket = socket;
+    this.player = new MusicPlayer();
     this.tracks = [];
+    this.rows = new Map(); // trackId -> row
     this.listElement = document.getElementById('music-list');
-  }
 
-  /** Load the tracks already on the server. */
-  async loadTracks() {
-    try {
-      const response = await fetch('/musicList');
-      const { success, tracks, message } = await response.json();
-      if (!success) throw new Error(message);
-      tracks.forEach((track) => this.addTrack(track));
-    } catch (err) {
-      console.error('Could not load the music list:', err.message);
-    }
-  }
-
-  addTrack({ url, filename, name }) {
-    // The upload filename is already unique and, unlike a generated id, it
-    // stays the same across reloads -- so players never accumulate duplicates.
-    if (this.tracks.some((track) => track.trackId === filename)) return;
-
-    const audio = new Audio(url);
-    audio.loop = true;
-    audio.volume = toVolume(DEFAULT_SLIDER);
-
-    this.tracks.push({
-      trackId: filename,
-      url,
-      filename,
-      name,
-      audio,
-      isPlaying: false,
-      slider: DEFAULT_SLIDER,
+    // Drawn from server state, so a reload or second tab shows what is playing.
+    this.socket.on('musicState', (tracks) => {
+      this.tracks = tracks;
+      this.player.sync(tracks);
+      this.render();
     });
-    this.render();
+
+    // Audio cannot start until the page is interacted with; any click will do.
+    document.addEventListener('click', () => this.player.enable(), { once: true });
+  }
+
+  trackFor(trackId) {
+    return this.tracks.find((track) => track.trackId === trackId);
   }
 
   // --- Rendering ---
-  // The list is rebuilt from state, so play/pause icons and slider positions
-  // can never drift out of sync with what is actually playing.
+  // Rows are patched, not rebuilt: a volume drag triggers state mid-drag, and
+  // replacing the list would pull the slider out from under the pointer.
 
   render() {
-    this.listElement.replaceChildren(...this.tracks.map((track) => this.renderTrack(track)));
+    for (const [trackId, row] of this.rows) {
+      if (this.trackFor(trackId)) continue;
+      row.item.remove();
+      this.rows.delete(trackId);
+    }
+
+    for (const track of this.tracks) {
+      let row = this.rows.get(track.trackId);
+      if (!row) {
+        row = this.createRow(track.trackId);
+        this.rows.set(track.trackId, row);
+      }
+      this.updateRow(row, track);
+      this.listElement.appendChild(row.item); // also keeps the order right
+    }
   }
 
-  renderTrack(track) {
-    const name = document.createElement('span');
-    name.className = 'track-name';
-    name.textContent = track.name;
-    name.title = track.name;
+  createRow(trackId) {
+    const row = { trackId, adjusting: false };
 
-    const playButton = document.createElement('button');
-    playButton.className = 'play-pause-button';
-    playButton.innerHTML = track.isPlaying ? pause : play;
-    playButton.title = track.isPlaying ? 'Pause' : 'Play';
-    playButton.addEventListener('click', () => this.togglePlayback(track));
+    row.name = document.createElement('span');
+    row.name.className = 'track-name';
 
-    const volume = document.createElement('input');
-    volume.type = 'range';
-    volume.className = 'volume-slider';
-    volume.min = 0;
-    volume.max = 100;
-    volume.value = track.slider;
-    volume.title = 'Volume';
-    volume.addEventListener('input', () => this.setVolume(track, Number(volume.value)));
+    row.playButton = document.createElement('button');
+    row.playButton.className = 'play-pause-button';
+    row.playButton.addEventListener('click', () => {
+      const playing = this.trackFor(trackId)?.playing;
+      this.socket.emit(playing ? 'pauseTrack' : 'playTrack', { trackId });
+    });
+
+    row.slider = document.createElement('input');
+    row.slider.type = 'range';
+    row.slider.className = 'volume-slider';
+    row.slider.min = 0;
+    row.slider.max = 100;
+    row.slider.title = 'Volume';
+
+    const sendVolume = throttle(
+      (volume) => this.socket.emit('setTrackVolume', { trackId, volume }),
+      VOLUME_INTERVAL
+    );
+
+    row.slider.addEventListener('input', () => {
+      row.adjusting = true;
+      const volume = toVolume(Number(row.slider.value));
+
+      // Local audio moves now; everyone else follows at the throttled rate.
+      const audio = this.player.elements.get(trackId);
+      if (audio) audio.volume = volume;
+      sendVolume(volume);
+    });
+    row.slider.addEventListener('change', () => {
+      row.adjusting = false;
+    });
 
     const deleteButton = document.createElement('button');
     deleteButton.className = 'delete-button';
     deleteButton.innerHTML = trash;
     deleteButton.title = 'Delete track';
-    deleteButton.addEventListener('click', () => this.deleteTrack(track));
+    deleteButton.addEventListener('click', () => {
+      const name = this.trackFor(trackId)?.name ?? trackId;
+      if (confirm(`Delete "${name}"?`)) this.socket.emit('deleteTrack', { trackId });
+    });
 
     const controls = document.createElement('div');
     controls.className = 'controls-container';
-    controls.append(playButton, volume, deleteButton);
+    controls.append(row.playButton, row.slider, deleteButton);
 
-    const item = document.createElement('li');
-    item.className = 'music-track-item';
-    item.append(name, controls);
-    return item;
+    row.item = document.createElement('li');
+    row.item.className = 'music-track-item';
+    row.item.append(row.name, controls);
+    return row;
   }
 
-  // --- Playback ---
+  updateRow(row, track) {
+    row.name.textContent = track.name;
+    row.name.title = track.name;
+    row.playButton.innerHTML = track.playing ? pause : play;
+    row.playButton.title = track.playing ? 'Pause' : 'Play';
 
-  togglePlayback(track) {
-    if (track.isPlaying) this.pause(track);
-    else this.play(track);
-  }
-
-  play(track) {
-    track.audio.play().catch((err) => console.error('Could not play track:', err));
-    track.isPlaying = true;
-    this.socket.emit('playTrack', {
-      trackId: track.trackId,
-      musicUrl: track.url,
-      currentTime: track.audio.currentTime,
-      volume: track.audio.volume,
-    });
-    this.render();
-  }
-
-  pause(track) {
-    track.audio.pause();
-    track.isPlaying = false;
-    this.socket.emit('pauseTrack', {
-      trackId: track.trackId,
-      currentTime: track.audio.currentTime,
-    });
-    this.render();
-  }
-
-  setVolume(track, slider) {
-    track.slider = slider;
-    track.audio.volume = toVolume(slider);
-    this.socket.emit('setTrackVolume', { trackId: track.trackId, volume: track.audio.volume });
-    // Deliberately no re-render: it would replace the slider mid-drag.
-  }
-
-  async deleteTrack(track) {
-    if (!confirm(`Delete "${track.name}"?`)) return;
-
-    try {
-      const response = await fetch('/deleteMusic', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename: track.filename }),
-      });
-      const { success, message } = await response.json();
-      if (!success) throw new Error(message);
-    } catch (err) {
-      console.error('Could not delete track:', err.message);
-      alert('Failed to delete music track.');
-      return;
-    }
-
-    track.audio.pause();
-    track.audio.src = '';
-    this.tracks = this.tracks.filter((candidate) => candidate !== track);
-    this.render();
-    this.socket.emit('deleteTrack', { trackId: track.trackId });
+    // Never fight a slider that is currently being moved.
+    if (!row.adjusting) row.slider.value = toSlider(track.volume);
   }
 
   // --- Uploading ---
@@ -178,16 +150,10 @@ export class MusicManager {
       body.append('music', file);
 
       try {
+        // The server registers the track and announces it; nothing to do here.
         const response = await fetch('/uploadMusic', { method: 'POST', body });
-        const { success, track, message } = await response.json();
+        const { success, message } = await response.json();
         if (!success) throw new Error(message);
-
-        this.addTrack(track);
-        this.socket.emit('addTrack', {
-          trackId: track.filename,
-          musicUrl: track.url,
-          name: track.name,
-        });
       } catch (err) {
         console.error(`Could not upload ${file.name}:`, err.message);
         alert(`Failed to upload "${file.name}".`);
