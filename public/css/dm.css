@@ -88,6 +88,11 @@ body.toolbar-hidden #toolbar {
   flex-direction: column;
 }
 
+/* Help text belongs to an empty canvas. */
+#scene-container.has-scene .instructions {
+  display: none;
+}
+
 #toggle-toolbar-button {
   position: fixed;
   top: 10px;

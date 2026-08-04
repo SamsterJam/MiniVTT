@@ -76,23 +76,35 @@ export class SceneRenderer {
     this.resetCamera();
     this.clear();
     this.sceneId = scene.sceneId;
+    this.container.classList.add('has-scene');
 
-    // For DM, include all tokens; for players, include only visible tokens
-    if (this.isDM) {
-      this.tokens = scene.tokens;
-    } else {
-      this.tokens = scene.tokens.filter((token) => !token.hidden);
-    }
-
-    this.tokens.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
+    this.tokens = this.isDM ? scene.tokens : scene.tokens.filter((token) => !token.hidden);
+    this.tokens.sort((a, b) => a.zIndex - b.zIndex);
     this.tokens.forEach((token) => this.renderToken(token));
 
     this.setBackgroundBasedOnTokens();
   }
 
+  /** Show nothing, which also restores the DM's help text. */
   clear() {
     this.world.replaceChildren();
-    this.container.querySelector('.instructions')?.remove();
+    this.sceneId = null;
+    this.tokens = [];
+    this.container.classList.remove('has-scene');
+  }
+
+  tokenFor(tokenId) {
+    return this.tokens.find((token) => token.tokenId === tokenId);
+  }
+
+  addToken(token) {
+    this.tokens.push(token);
+    this.renderToken(token);
+  }
+
+  removeToken(tokenId) {
+    this.tokens = this.tokens.filter((token) => token.tokenId !== tokenId);
+    document.getElementById(`token-${tokenId}`)?.remove();
   }
 
   renderToken(token) {
@@ -138,13 +150,9 @@ export class SceneRenderer {
     element.style.top = `${token.y}px`;
     element.style.width = `${token.width}px`;
     element.style.height = `${token.height}px`;
-    element.style.transform = `rotate(${token.rotation || 0}deg)`;
-    element.style.zIndex = token.zIndex || 0;
+    element.style.transform = `rotate(${token.rotation}deg)`;
+    element.style.zIndex = token.zIndex;
     element.style.opacity = this.isDM && token.hidden ? '0.5' : '1';
-  }
-
-  removeTokenElement(tokenId) {
-    document.getElementById(`token-${tokenId}`)?.remove();
   }
 
   /** Tint the backdrop from the largest token, so a map blends into the page. */

@@ -75,6 +75,11 @@ class SceneModel {
     this.activeSceneId = null;
     this.scenes = {}; // sceneId -> scene
     this.pendingWrites = new Set(); // sceneIds awaiting a save
+    this.io = null;
+  }
+
+  attach(io) {
+    this.io = io;
   }
 
   /**
@@ -90,10 +95,12 @@ class SceneModel {
       try {
         const scene = JSON.parse(await fs.readFile(path.join(SCENES_DIR, file), 'utf8'));
         this.scenes[scene.sceneId] = scene;
+        delete scene.dirty; // earlier versions persisted their save-bookkeeping
 
-        // Earlier versions persisted their save-bookkeeping; rewrite it away.
-        if ('dirty' in scene) {
-          delete scene.dirty;
+        // Stored tokens predate several fields; the write validator fills them in.
+        const tokens = (scene.tokens ?? []).map(sanitizeToken).filter(Boolean);
+        if (JSON.stringify(tokens) !== JSON.stringify(scene.tokens)) {
+          scene.tokens = tokens;
           this.pendingWrites.add(scene.sceneId);
         }
       } catch (err) {
@@ -148,6 +155,17 @@ class SceneModel {
       .sort((a, b) => a.order - b.order);
   }
 
+  /** Only the DM has a scene list. */
+  broadcastList() {
+    this.io?.to('dm').emit('sceneList', this.listScenes());
+  }
+
+  /** Show a scene to everyone, filtered per role. */
+  broadcastScene(sceneId) {
+    this.io?.to('dm').emit('sceneData', this.sceneFor(sceneId, true));
+    this.io?.to('player').emit('sceneData', this.sceneFor(sceneId, false));
+  }
+
   createScene(sceneName) {
     const scene = {
       sceneId: Date.now().toString(),
@@ -157,32 +175,42 @@ class SceneModel {
     };
     this.scenes[scene.sceneId] = scene;
     this.touch(scene);
+    this.broadcastList();
     return scene;
   }
 
   setActiveScene(sceneId) {
-    if (this.scenes[sceneId]) this.activeSceneId = sceneId;
+    if (!this.scenes[sceneId]) return;
+    this.activeSceneId = sceneId;
+    this.broadcastScene(sceneId);
   }
 
   async deleteScene(sceneId) {
     const scene = this.scenes[sceneId];
-    if (!scene) throw new Error('Scene not found.');
+    if (!scene) return;
 
     delete this.scenes[sceneId];
     this.pendingWrites.delete(sceneId);
     if (this.activeSceneId === sceneId) this.activeSceneId = null;
+
+    // Anyone showing this scene clears it; anyone else ignores it.
+    this.io?.emit('sceneDeleted', { sceneId });
+    this.broadcastList();
 
     await fs.unlink(path.join(SCENES_DIR, `${sceneId}.json`)).catch(() => {});
     await this.pruneMedia(scene.tokens.map((token) => token.imageUrl));
   }
 
   reorderScenes(sceneOrder) {
+    if (!Array.isArray(sceneOrder)) return;
+
     sceneOrder.forEach((sceneId, index) => {
       const scene = this.scenes[sceneId];
       if (!scene) return;
       scene.order = index;
       this.touch(scene);
     });
+    this.broadcastList();
   }
 
   // --- Tokens ---

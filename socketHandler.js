@@ -5,6 +5,7 @@ const session = require('./session');
 
 module.exports = (io) => {
   io.engine.use(session);
+  Scene.attach(io);
   Music.attach(io);
 
   // The page asks for a role, the session decides whether it gets it. Asking
@@ -21,14 +22,10 @@ module.exports = (io) => {
     console.log(`${role} connected (${socket.id})`);
     socket.on('disconnect', () => console.log(`${role} disconnected (${socket.id})`));
 
-    socket.emit('activeSceneId', Scene.activeSceneId);
+    // Everything the page needs to draw itself, so it never has to ask.
+    socket.emit('sceneData', Scene.sceneFor(Scene.activeSceneId, socket.isDM));
     socket.emit('musicState', Music.state());
-
-    socket.on('loadScene', ({ sceneId } = {}) => {
-      const scene = Scene.sceneFor(sceneId, socket.isDM);
-      if (scene) socket.emit('sceneData', scene);
-      else socket.emit('error', { message: 'Scene not found.' });
-    });
+    if (socket.isDM) socket.emit('sceneList', Scene.listScenes());
 
     // Open to players too; the model decides what they may actually touch.
     socket.on('updateToken', ({ sceneId, tokenId, properties } = {}) => {
@@ -38,10 +35,15 @@ module.exports = (io) => {
     if (!socket.isDM) return;
 
     // --- DM only ---
-    socket.on('changeScene', ({ sceneId } = {}) => {
-      Scene.setActiveScene(sceneId);
-      io.emit('activeSceneId', Scene.activeSceneId);
+    socket.on('changeScene', ({ sceneId } = {}) => Scene.setActiveScene(sceneId));
+
+    // A new scene is shown to its author alone, leaving the table on the old one.
+    socket.on('createScene', ({ sceneName } = {}) => {
+      socket.emit('sceneData', Scene.createScene(sceneName));
     });
+
+    socket.on('deleteScene', ({ sceneId } = {}) => Scene.deleteScene(sceneId));
+    socket.on('reorderScenes', ({ sceneOrder } = {}) => Scene.reorderScenes(sceneOrder));
 
     socket.on('addToken', ({ sceneId, token } = {}) => Scene.addToken(sceneId, token, socket));
 

@@ -4,7 +4,6 @@ const crypto = require('crypto');
 const path = require('path');
 
 const config = require('./config');
-const sceneController = require('./controllers/sceneController');
 const uploadController = require('./controllers/uploadController');
 const musicController = require('./controllers/musicController');
 
@@ -44,14 +43,8 @@ router.post('/dm-logout', (req, res) => {
 
 router.get('/dm', requireDM, (req, res) => res.sendFile(page('dm.html')));
 
-// --- Scenes ---
-
-router.get('/scenes', sceneController.getScenes); // players need the list too
-router.post('/createScene', requireDM, sceneController.createScene);
-router.post('/deleteScene', requireDM, sceneController.deleteScene);
-router.post('/updateSceneOrder', requireDM, sceneController.updateSceneOrder);
-
 // --- Media ---
+// Scenes and music go over the socket; uploads need a real HTTP request.
 
 router.post('/upload', requireDM, uploadController.uploadFile);
 router.post('/uploadMusic', requireDM, musicController.uploadMusic);

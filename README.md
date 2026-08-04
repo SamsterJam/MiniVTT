@@ -155,17 +155,17 @@ Drag audio files into the music drop area or use the Music Manager panel. Playba
 ├── app.js                 // Express setup
 ├── config.js              // Port, DM password, session secret
 ├── session.js             // Session middleware, shared by Express and Socket.IO
-├── routes.js              // HTTP routes and DM authentication
+├── routes.js              // DM authentication and uploads
 ├── socketHandler.js       // Socket events and role authorisation
 ├── controllers
 │   ├── musicController.js
-│   ├── sceneController.js
 │   └── uploadController.js
 ├── data
 │   └── scenes             // Stored scene data
 ├── middlewares
 │   └── upload.js          // Shared upload handling for tokens and music
 ├── models
+│   ├── musicModel.js      // Playback state, extrapolated from the server clock
 │   └── sceneModel.js      // Scene state, persistence, and the trust boundary
 └── public                 // Client-side files
     ├── css
@@ -178,6 +178,7 @@ Drag audio files into the music drop area or use the Music Manager panel. Playba
     │   ├── dm.js
     │   ├── icons.js
     │   ├── musicManager.js
+    │   ├── musicPlayer.js
     │   ├── panZoomHandler.js
     │   ├── player.js
     │   ├── sceneManager.js
