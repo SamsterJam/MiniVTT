@@ -179,6 +179,39 @@ class SceneModel {
     return scene;
   }
 
+  renameScene(sceneId, sceneName) {
+    const scene = this.scenes[sceneId];
+    const name = text(sceneName)?.trim();
+    if (!scene || !name) return;
+
+    scene.sceneName = name;
+    this.touch(scene);
+    this.broadcastList();
+  }
+
+  /**
+   * Copy a scene, tokens and all. Both point at the same media, which
+   * pruneMedia counts by reference, so nothing is duplicated on disk.
+   */
+  duplicateScene(sceneId) {
+    const source = this.scenes[sceneId];
+    if (!source) return null;
+
+    const stamp = Date.now().toString();
+    const scene = {
+      sceneId: stamp,
+      sceneName: `${source.sceneName} copy`,
+      order: Object.keys(this.scenes).length,
+      // Fresh ids, so moving a token in one scene never stirs the other.
+      tokens: source.tokens.map((token, index) => ({ ...token, tokenId: `${stamp}-${index}` })),
+    };
+
+    this.scenes[scene.sceneId] = scene;
+    this.touch(scene);
+    this.broadcastList();
+    return scene;
+  }
+
   setActiveScene(sceneId) {
     if (!this.scenes[sceneId]) return;
     this.activeSceneId = sceneId;

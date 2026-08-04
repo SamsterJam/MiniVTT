@@ -4,6 +4,43 @@ import { MusicManager } from './musicManager.js';
 import { SceneRenderer } from './sceneRenderer.js';
 import { PanZoomHandler } from './panZoomHandler.js';
 import { TokenManager } from './tokenManager.js';
+import { COMMANDS, keyLabel } from './commands.js';
+import { plus, music, help, close } from './icons.js';
+
+/** Draw the shortcut overlay from the command table, grouped as declared. */
+function buildShortcutList(container) {
+  const groups = new Map();
+  for (const command of COMMANDS) {
+    if (!groups.has(command.group)) groups.set(command.group, []);
+    groups.get(command.group).push(command);
+  }
+
+  container.replaceChildren(
+    ...[...groups].map(([name, commands]) => {
+      const group = document.createElement('div');
+      group.className = 'shortcut-group';
+
+      const heading = document.createElement('h3');
+      heading.textContent = name;
+      group.append(heading);
+
+      for (const command of commands) {
+        const row = document.createElement('div');
+        row.className = 'shortcut';
+
+        const label = document.createElement('span');
+        label.textContent = command.label;
+
+        const key = document.createElement('kbd');
+        key.textContent = keyLabel(command.key);
+
+        row.append(label, key);
+        group.append(row);
+      }
+      return group;
+    })
+  );
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   // Ask for the DM role; the server grants it only to a session that logged in
@@ -21,8 +58,28 @@ document.addEventListener('DOMContentLoaded', () => {
   const musicManager = new MusicManager(socket);
   musicManager.attachDropTarget(document.getElementById('music-drop-area'));
 
-  document.getElementById('create-scene-button').addEventListener('click', () => {
-    const sceneName = prompt('Enter a name for the new scene:');
-    if (sceneName?.trim()) sceneManager.createScene(sceneName.trim());
+  // --- Chrome ---
+
+  const createButton = document.getElementById('create-scene-button');
+  const musicButton = document.getElementById('music-toggle');
+  const helpButton = document.getElementById('help-toggle');
+  const musicClose = document.getElementById('music-close');
+
+  createButton.innerHTML = plus;
+  musicButton.innerHTML = music;
+  helpButton.innerHTML = help;
+  musicClose.innerHTML = close;
+
+  createButton.addEventListener('click', () => sceneManager.promptNewScene());
+  helpButton.addEventListener('click', () => sceneManager.toggleHelp());
+  musicButton.addEventListener('click', () => sceneManager.toggleMusic());
+  musicClose.addEventListener('click', () => sceneManager.toggleMusic());
+
+  buildShortcutList(document.querySelector('#help-dialog .shortcut-groups'));
+
+  // A dot for when the panel is closed over a playing track. CSS hides it
+  // again once the panel is open to speak for itself.
+  socket.on('musicState', (tracks) => {
+    musicButton.classList.toggle('is-playing', tracks.some((track) => track.playing));
   });
 });

@@ -2,6 +2,7 @@ public/uploads/*
 !public/uploads/.gitkeep
 data/scenes/*
 !data/scenes/.gitkeep
+data/musicNames.json
 public/music/*
 !public/music/.gitkeep
 

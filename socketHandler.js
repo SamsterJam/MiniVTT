@@ -42,6 +42,16 @@ module.exports = (io) => {
       socket.emit('sceneData', Scene.createScene(sceneName));
     });
 
+    // Like a new scene, a copy opens for its author alone.
+    socket.on('duplicateScene', ({ sceneId } = {}) => {
+      const scene = Scene.duplicateScene(sceneId);
+      if (scene) socket.emit('sceneData', scene);
+    });
+
+    socket.on('renameScene', ({ sceneId, sceneName } = {}) =>
+      Scene.renameScene(sceneId, sceneName)
+    );
+
     socket.on('deleteScene', ({ sceneId } = {}) => Scene.deleteScene(sceneId));
     socket.on('reorderScenes', ({ sceneOrder } = {}) => Scene.reorderScenes(sceneOrder));
 
@@ -54,6 +64,8 @@ module.exports = (io) => {
     socket.on('playTrack', ({ trackId } = {}) => Music.play(trackId));
     socket.on('pauseTrack', ({ trackId } = {}) => Music.pause(trackId));
     socket.on('setTrackVolume', ({ trackId, volume } = {}) => Music.setVolume(trackId, volume));
+    socket.on('renameTrack', ({ trackId, name } = {}) => Music.rename(trackId, name));
+    socket.on('reorderTracks', ({ trackOrder } = {}) => Music.reorder(trackOrder));
     socket.on('deleteTrack', ({ trackId } = {}) => Music.remove(trackId));
   });
 };

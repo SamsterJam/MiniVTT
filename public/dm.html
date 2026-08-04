@@ -5,38 +5,71 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Mini VTT DM</title>
+  <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="stylesheet" href="/css/dm.css">
   <link rel="icon" type="image/png" href="/MiniVTT_Logo_DM.png">
 </head>
 
 <body>
-  <div id="toolbar">
-    <button id="create-scene-button">Create Scene</button>
-    <div class="separator"></div>
-    <div id="scene-buttons-container">
-      <!-- Scene buttons are added here at runtime -->
+  <div id="scene-container">
+    <div id="empty-state">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <rect x="3" y="4" width="18" height="16" rx="2" stroke-dasharray="3 3" />
+        <circle cx="8.5" cy="9.5" r="1.5" />
+        <path d="m4 17 5-5 4 4 3-2 4 3" />
+      </svg>
+      <p class="no-scene">No scene loaded</p>
+      <p class="empty-scene">Drop images or video anywhere to add tokens</p>
+      <p class="hint">Press <kbd>?</kbd> for shortcuts</p>
     </div>
+
+    <!-- The world is inserted here at runtime, between these two. -->
+
+    <div id="marquee"></div>
   </div>
 
-  <div id="music-panel">
-    <h3>Music Control</h3>
-    <div id="music-drop-area">Drag and drop music files here to upload</div>
+  <header id="toolbar">
+    <div class="bar surface">
+      <button id="create-scene-button" class="btn icon" title="New scene  (N)"></button>
+      <div class="sep"></div>
+      <div id="scene-tabs">
+        <!-- Scene tabs are added here at runtime -->
+      </div>
+      <div class="sep"></div>
+      <button id="music-toggle" class="btn icon" title="Music panel  (M)"></button>
+      <button id="help-toggle" class="btn icon" title="Shortcuts  (?)"></button>
+    </div>
+  </header>
+
+  <div id="token-actions" class="surface">
+    <!-- Built from the command table at runtime -->
+  </div>
+
+  <aside id="music-panel" class="surface">
+    <header>
+      <h2>Music</h2>
+      <button id="music-close" class="btn icon" title="Hide panel  (M)"></button>
+    </header>
     <ul id="music-list">
       <!-- Music tracks are added here at runtime -->
     </ul>
-  </div>
+    <div id="music-drop-area">Drop audio here, or click to browse</div>
+  </aside>
 
-  <div id="scene-container">
-    <div class="instructions">
-      <p>Create or select a scene, then drag and drop images here to add tokens to your scene.</p>
-      <p>- Delete token with [DEL]</p>
-      <p>- Toggle token to be interactable by players with [I]</p>
-      <p>- Toggle toolbar with [T]</p>
-      <p>- Delete Scene with [Shift+D]</p>
-      <p>- Toggle Music bar with [M]</p>
-    </div>
-  </div>
+  <dialog id="help-dialog">
+    <form method="dialog" class="dialog-card surface">
+      <h2>Shortcuts</h2>
+      <div class="shortcut-groups">
+        <!-- Generated from the command table at runtime -->
+      </div>
+      <div class="dialog-actions">
+        <button class="btn primary" value="ok">Close</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toasts"></div>
 
   <script src="/vendor/interact/interact.min.js"></script>
   <script src="/vendor/sortable/Sortable.min.js"></script>

@@ -1,0 +1,40 @@
+/* public/css/theme.css
+   Every color, radius, and duration resolves to one of these. Color outside
+   the accent means something: green releases a token, red destroys. */
+
+:root {
+  /* --- Surfaces --- */
+  --bg: #16171a;
+  --panel: rgba(22, 23, 26, 0.72);
+  --surface: rgba(255, 255, 255, 0.07);
+  --surface-hover: rgba(255, 255, 255, 0.13);
+  --surface-active: rgba(255, 255, 255, 0.2);
+  --surface-lit: rgba(255, 255, 255, 0.28);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.22);
+
+  /* --- Text --- */
+  --text: #e9eaee;
+  --text-dim: #8d919b;
+
+  /* --- Accent --- */
+  --accent: #2d8cff;
+  --accent-hover: #4d9dff;
+  --accent-dim: rgba(45, 140, 255, 0.2);
+
+  /* --- State --- */
+  --movable: #35d29a;
+  --movable-glow: rgba(53, 210, 154, 0.45);
+  --danger: #ff5d5d;
+  --danger-dim: rgba(255, 93, 93, 0.16);
+
+  /* --- Form --- */
+  --radius: 10px;
+  --radius-sm: 6px;
+  --blur: blur(18px) saturate(140%);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+
+  /* --- Motion --- */
+  --dur: 140ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+}

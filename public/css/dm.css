@@ -1,291 +1,675 @@
+/* public/css/dm.css
+   DM chrome. Everything floats over the canvas -- no panel reserves layout
+   space, so the map is always full-bleed. */
+
+/* --- The one surface treatment --- */
+
+.surface {
+  background: var(--panel);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* --- The one button --- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex: none;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.btn:hover {
+  background: var(--surface-hover);
+}
+
+.btn:active {
+  background: var(--surface-active);
+}
+
+.btn.icon {
+  width: 28px;
+  padding: 0;
+}
+
+.btn svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+}
+
+/* A lit toggle is showing you the state it is already in. */
+.btn.is-on {
+  background: var(--accent-dim);
+  color: var(--accent);
+}
+
+.btn.danger:hover {
+  background: var(--danger-dim);
+  color: var(--danger);
+}
+
+.btn.primary,
+.btn.solid-danger {
+  height: 30px;
+  padding: 0 14px;
+  color: #fff;
+}
+
+.btn.primary {
+  background: var(--accent);
+}
+
+.btn.primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn.solid-danger {
+  background: var(--danger);
+}
+
+.btn.solid-danger:hover {
+  background: #ff7676;
+}
+
+:where(button, input, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sep {
+  flex: none;
+  width: 1px;
+  height: 18px;
+  margin: 0 3px;
+  background: var(--border);
+}
+
+/* --- Toolbar --- */
+
 #toolbar {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  padding: 10px;
+  top: 12px;
+  right: 12px;
+  left: 12px;
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+
+  /* The gaps either side of the bar stay canvas, not a dead strip. */
+  pointer-events: none;
+  transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease);
+}
+
+#toolbar .bar {
   display: flex;
   align-items: center;
-  box-sizing: border-box;
-  z-index: 100;
-  transition: transform 0.3s ease;
+  gap: 3px;
+  max-width: 100%;
+  padding: 5px;
+  pointer-events: auto;
 }
 
 body.toolbar-hidden #toolbar {
-  transform: translateY(-100%);
+  transform: translateY(calc(-100% - 16px));
+  opacity: 0;
 }
 
-#toolbar input {
-  padding: 5px;
-  margin-right: 10px;
-  border: 1px solid #555;
-  border-radius: 3px;
-  background-color: #3c3c3c;
-  color: #fff;
-  max-width: 200px;
-}
-
-#toolbar button {
-  padding: 5px 10px;
-  border: none;
-  border-radius: 3px;
-  background-color: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(16px);
-  color: #fff;
-  cursor: pointer;
-  margin-right: 10px;
-}
-
-#toolbar button:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-#scene-buttons-container {
+#scene-tabs {
   display: flex;
+  align-items: center;
+  gap: 2px;
   overflow-x: auto;
-  flex: 1;
-  scrollbar-width: thin;
-  scrollbar-color: #444 transparent;
+
+  /* A scrollbar under six chips is louder than the chips themselves. */
+  scrollbar-width: none;
 }
 
-#scene-buttons-container::-webkit-scrollbar {
-  height: 6px;
-}
-
-#scene-buttons-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-#scene-buttons-container::-webkit-scrollbar-thumb {
-  background-color: #444;
-  border-radius: 3px;
-}
-
-.scene-button {
-  background-color: #3c3c3c;
-  color: #fff;
-  border: none;
-  border-radius: 3px;
-  padding: 5px 10px;
-  margin-right: 5px;
-  cursor: pointer;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.scene-button.active {
-  background-color: #007bff;
-}
-
-.scene-button:hover {
-  background-color: #505050;
-}
-
-.instructions {
-  text-align: center;
-  color: #888;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Help text belongs to an empty canvas. */
-#scene-container.has-scene .instructions {
+#scene-tabs::-webkit-scrollbar {
   display: none;
 }
 
-#toggle-toolbar-button {
-  position: fixed;
-  top: 10px;
-  right: 10px;
-  z-index: 101;
-  padding: 5px 10px;
-  border: none;
-  border-radius: 3px;
-  background-color: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  cursor: pointer;
-}
-
-#toggle-toolbar-button:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-
-/* Styling for the create scene button */
-#create-scene-button {
-  background-color: rgba(200, 255, 200, 0.2);
-  margin-right: 10px;
-}
-
-#create-scene-button:hover {
-  background-color: rgba(200, 255, 200, 0.3);
-}
-
-/* Separator styling */
-.separator {
-  height: 20px;
-  width: 1px;
-  background-color: #555;
-  margin-right: 10px;
-}
-
-/* Make unordered lists not have bullets */
-ul {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-}
-
-/* Music Panel Styles */
-#music-panel {
-  position: fixed;
-  top: 50px; /* Adjust this value if your toolbar height is different */
-  right: 0;
-  width: 300px; /* Adjust the width as needed */
-  height: fit-content;
-  background-color: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(16px);
-  padding: 10px;
-  color: #fff;
-  overflow-y: auto;
-  z-index: 200; /* Adjusted z-index */
-  border: white 1px solid;
-  border-radius: 10px 0 0 10px;
-  transition: transform 0.3s ease;
-  transform: translateX(0); /* Visible by default */
-}
-
-/* Keep the canvas clear of the panel, and give the space back when it slides
-   away -- the two used to be independent, so hiding the panel left a 300px
-   dead strip on the right. */
-#scene-container {
-  margin-right: 300px;
-  transition: margin-right 0.3s ease;
-}
-
-body.music-hidden #music-panel {
-  transform: translateX(100%);
-}
-
-body.music-hidden #scene-container {
-  margin-right: 0;
-}
-
-/* Music Tracks List */
-#music-panel ul {
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-}
-
-.music-track-item {
-  padding: 10px;
-  border-bottom: 1px solid #444;
-  color: #fff;
-}
-
-.music-track-item .track-name {
-  display: block;
-  font-weight: bold;
-  margin-bottom: 5px;
+.scene-tab {
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: inline-block;
+  line-height: 28px;
+}
+
+/* The loaded scene gets the accent: exactly one chip, and the bar's headline. */
+.scene-tab.active {
+  background: var(--accent-dim);
+  color: #b9d8ff;
+  box-shadow: inset 0 0 0 1px rgba(45, 140, 255, 0.35);
+}
+
+/* Same lit shape, no color, so it reads as "on" without competing with the
+   scene chip. Driven off the body class, so nothing keeps it in sync. A step
+   brighter than hover, plus a ring hover lacks, keeps the two apart. */
+body:not(.music-hidden) #music-toggle {
+  background: var(--surface-active);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+body:not(.music-hidden) #music-toggle:hover {
+  background: var(--surface-lit);
+}
+
+#music-toggle {
+  position: relative;
+}
+
+/* Only while the panel is closed; open, the list says it better. */
+body.music-hidden #music-toggle.is-playing::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.scene-tab.sortable-ghost {
+  opacity: 0.3;
+}
+
+#scene-tabs:empty::after {
+  content: 'No scenes yet';
+  padding: 0 8px;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 28px;
+}
+
+/* --- Selection bar ---
+   Anchored to the bottom, not the selection: a bar that chases tokens is a bar
+   you have to look for. */
+
+#token-actions {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
+  opacity: 0;
+  transform: translateX(-50%) translateY(8px);
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+#token-actions.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+
+.selection-count {
+  padding: 0 10px 0 6px;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.controls-container {
+/* --- Empty state --- */
+
+#empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: var(--text-dim);
+  text-align: center;
+  pointer-events: none;
+}
+
+#empty-state svg {
+  width: 52px;
+  height: 52px;
+  opacity: 0.35;
+}
+
+#empty-state p {
+  margin: 0;
+  font-size: 14px;
+}
+
+#empty-state .hint {
+  font-size: 12.5px;
+  opacity: 0.7;
+}
+
+/* Which line applies depends on how empty the canvas actually is. */
+#scene-container.has-scene .no-scene,
+#scene-container:not(.has-scene) .empty-scene,
+#scene-container.has-tokens #empty-state {
+  display: none;
+}
+
+/* --- Music panel --- */
+
+#music-panel {
+  position: fixed;
+  top: 58px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  width: 272px;
+  overflow: hidden;
+  transition: transform var(--dur) var(--ease), opacity var(--dur) var(--ease);
+}
+
+body.music-hidden #music-panel {
+  transform: translateX(calc(100% + 16px));
+  opacity: 0;
+  pointer-events: none;
+}
+
+#music-panel header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px 8px 14px;
+  border-bottom: 1px solid var(--border);
 }
 
-.play-pause-button,
-.delete-button {
-  background-color: transparent;
-  border: none;
-  color: #fff;
-  cursor: pointer;
-  margin-right: 10px;
+#music-panel h2 {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
 }
 
-.play-pause-button svg,
-.delete-button svg {
+#music-list {
+  flex: 1;
+  margin: 0;
+  padding: 5px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+#music-list:empty::after {
+  content: 'No tracks yet';
   display: block;
-  width: 16px;
-  height: 16px;
+  padding: 26px 0;
+  color: var(--text-dim);
+  font-size: 13px;
+  text-align: center;
 }
 
-.play-pause-button:hover,
-.delete-button:hover {
-  color: #007bff;
+.music-track-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 8px;
+  border-radius: var(--radius-sm);
+  transition: background var(--dur) var(--ease);
+}
+
+.music-track-item:hover {
+  background: var(--surface);
+}
+
+.music-track-item.sortable-ghost {
+  opacity: 0.3;
+}
+
+/* A playing track is marked once, on the edge, rather than restyled all over. */
+.music-track-item.playing::before {
+  content: '';
+  position: absolute;
+  top: 9px;
+  bottom: 9px;
+  left: 0;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+
+.music-track-item.playing .play-pause-button,
+.music-track-item.playing .track-name {
+  color: var(--accent);
+}
+
+/* The transport is the row's main control, so it fills more of its button. */
+.play-pause-button svg {
+  width: 21px;
+  height: 21px;
+}
+
+.track-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+.track-name {
+  overflow: hidden;
+  padding: 1px 3px;
+  margin: -1px -3px; /* cancels the padding, which is only for the edit field */
+  border-radius: 3px;
+  color: var(--text);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: text;
+}
+
+/* The ellipsis would swallow the caret at the end of a long name, so scrolling
+   takes over while editing. */
+.track-name.editing {
+  overflow-x: auto;
+  text-overflow: clip;
+  outline: none;
+  background: rgba(0, 0, 0, 0.32);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  scrollbar-width: none;
+}
+
+.track-name.editing::-webkit-scrollbar {
+  display: none;
+}
+
+/* Dim but always present: it advertises the drag without costing a button. */
+.track-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 14px;
+  color: var(--text-dim);
+  opacity: 0.45;
+  cursor: grab;
+  transition: opacity var(--dur) var(--ease);
+}
+
+/* Larger than its 14px slot; the overflow is the glyph's own empty margin, so
+   the dots grow without moving the row. */
+.track-handle svg {
+  display: block;
+  flex: none;
+  width: 18px;
+  height: 18px;
+}
+
+.music-track-item:hover .track-handle {
+  opacity: 1;
+}
+
+.track-handle:active {
+  cursor: grabbing;
 }
 
 .volume-slider {
-  flex: 1;
-  -webkit-appearance: none; /* For Chrome/Safari */
-  height: 5px;
-  background: #444;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 3px;
+  border-radius: 2px;
   outline: none;
-  border-radius: 5px;
   cursor: pointer;
-  margin-right: 10px;
+
+  /* The filled portion is the value itself, written by MusicManager. */
+  background: linear-gradient(
+    to right,
+    var(--accent) calc(var(--fill, 0) * 1%),
+    var(--border-strong) calc(var(--fill, 0) * 1%)
+  );
 }
 
 .volume-slider::-webkit-slider-thumb {
-  -webkit-appearance: none; /* Override default look */
-  width: 12px;
-  height: 12px;
-  background: #007bff;
+  -webkit-appearance: none;
+  width: 11px;
+  height: 11px;
+  border: 0;
   border-radius: 50%;
+  background: var(--text);
+  transition: transform var(--dur) var(--ease);
+}
+
+.music-track-item:hover .volume-slider::-webkit-slider-thumb {
+  transform: scale(1.18);
 }
 
 .volume-slider::-moz-range-thumb {
-  width: 12px;
-  height: 12px;
-  background: #007bff;
+  width: 11px;
+  height: 11px;
+  border: 0;
   border-radius: 50%;
+  background: var(--text);
 }
 
-.volume-slider::-ms-thumb {
-  width: 12px;
-  height: 12px;
-  background: #007bff;
-  border-radius: 50%;
-}
-
-/* Adjust list item on hover */
-.music-track-item:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-}
-
-/* Selected Track */
-.music-track-item.selected-track {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-/* Music Drop Area */
 #music-drop-area {
-  border: 2px dashed #ccc;
-  padding: 20px;
-  margin-bottom: 20px;
+  margin: 0 8px 8px;
+  padding: 11px;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
+  font-size: 12.5px;
   text-align: center;
-  transition: background-color 0.3s;
-}
-
-#music-drop-area:hover {
-  border-color: #aaa;
   cursor: pointer;
+  transition: border-color var(--dur) var(--ease), color var(--dur) var(--ease),
+    background var(--dur) var(--ease);
 }
 
+#music-drop-area:hover,
 #music-drop-area.dragover {
-  border-color: #fff;
-  background-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  color: var(--accent);
 }
 
-/* Dragging Styles */
-.scene-button.dragging {
-  opacity: 0.5;
+/* --- Dialogs --- */
+
+dialog {
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
 }
 
-.scene-button.placeholder {
-  background-color: #444;
-  border: 2px dashed #666;
+dialog::backdrop {
+  background: rgba(12, 13, 15, 0.6);
+  backdrop-filter: blur(3px);
+}
+
+dialog[open] .dialog-card {
+  animation: dialog-in var(--dur) var(--ease);
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+.dialog-card {
+  padding: 18px 20px 16px;
+}
+
+.dialog-card h2 {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.dialog-card > p {
+  margin: 0 0 14px;
+  color: var(--text-dim);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dialog-card > p[hidden] {
+  display: none;
+}
+
+.dialog-input {
+  width: 100%;
+  height: 34px;
+  margin-bottom: 14px;
+  padding: 0 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.dialog-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Reversed, so the confirming button is first in the DOM -- the one Enter
+   submits -- while still rendering on the right. */
+.dialog-actions {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+/* --- Shortcut overlay --- */
+
+#help-dialog .dialog-card {
+  width: 560px;
+  max-width: 100%;
+  padding: 20px 22px;
+}
+
+#help-dialog .dialog-actions {
+  margin-top: 20px;
+}
+
+.shortcut-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px 32px;
+}
+
+.shortcut-group h3 {
+  margin: 0 0 8px;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.shortcut {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 3px 0;
+  font-size: 13px;
+}
+
+.shortcut span {
+  color: var(--text-dim);
+}
+
+kbd {
+  display: inline-block;
+  flex: none;
+  min-width: 20px;
+  padding: 2px 6px;
+  border: 1px solid var(--border-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font: 500 11px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* --- Context menu --- */
+
+.context-menu {
+  position: fixed;
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  min-width: 156px;
+  padding: 4px;
+}
+
+.context-menu .btn {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+/* --- Toasts --- */
+
+#toasts {
+  position: fixed;
+  bottom: 12px;
+  left: 12px;
+  z-index: 300;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  padding: 10px 14px;
+  font-size: 13px;
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+  animation: toast-in var(--dur) var(--ease);
+}
+
+.toast.error {
+  color: #ffc4c4;
+  box-shadow: var(--shadow), inset 2px 0 0 var(--danger);
+}
+
+.toast.leaving {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
 }

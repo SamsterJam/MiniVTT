@@ -3,8 +3,10 @@ const path = require('path');
 const fs = require('fs').promises;
 
 const MUSIC_DIR = path.join(__dirname, '..', 'public', 'music');
+const NAMES_FILE = path.join(__dirname, '..', 'data', 'musicNames.json');
 const AUDIO_EXTENSIONS = new Set(['.mp3', '.wav', '.ogg', '.m4a', '.flac']);
 const DEFAULT_VOLUME = 0.125; // what the DM's slider sits at when it is halfway
+const MAX_NAME = 200;
 
 // Drop the upload's timestamp prefix and extension.
 const displayName = (filename) =>
@@ -17,6 +19,7 @@ const displayName = (filename) =>
 class MusicModel {
   constructor() {
     this.tracks = new Map(); // trackId (= filename) -> track
+    this.names = {}; // trackId -> the name the DM chose, when they chose one
     this.io = null;
   }
 
@@ -26,18 +29,51 @@ class MusicModel {
 
   async load() {
     await fs.mkdir(MUSIC_DIR, { recursive: true });
-    const files = await fs.readdir(MUSIC_DIR);
+    await this.loadNames();
 
+    const files = await fs.readdir(MUSIC_DIR);
     for (const file of files) {
       if (AUDIO_EXTENSIONS.has(path.extname(file).toLowerCase())) this.register(file);
     }
+
+    // Forget names whose file has gone, so the store cannot grow forever.
+    const stale = Object.keys(this.names).filter((trackId) => !this.tracks.has(trackId));
+    if (stale.length > 0) {
+      for (const trackId of stale) delete this.names[trackId];
+      await this.saveNames();
+    }
+
     console.log(`Loaded ${this.tracks.size} music track(s).`);
+  }
+
+  // --- Chosen names ---
+  // The filename is the track's id and its URL, so renaming stores a label
+  // rather than moving the file and breaking both.
+
+  async loadNames() {
+    try {
+      const parsed = JSON.parse(await fs.readFile(NAMES_FILE, 'utf8'));
+      this.names = parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch (err) {
+      // No file yet is the ordinary first run; anything else is a fault.
+      if (err.code !== 'ENOENT') console.error(`Could not read track names: ${err.message}`);
+      this.names = {};
+    }
+  }
+
+  async saveNames() {
+    try {
+      await fs.mkdir(path.dirname(NAMES_FILE), { recursive: true });
+      await fs.writeFile(NAMES_FILE, JSON.stringify(this.names, null, 2));
+    } catch (err) {
+      console.error(`Could not save track names: ${err.message}`);
+    }
   }
 
   register(filename) {
     const track = {
       trackId: filename,
-      name: displayName(filename),
+      name: this.names[filename] ?? displayName(filename),
       url: `/music/${encodeURIComponent(filename)}`,
       playing: false,
       volume: DEFAULT_VOLUME,
@@ -98,11 +134,42 @@ class MusicModel {
     this.broadcast();
   }
 
+  rename(trackId, name) {
+    const track = this.tracks.get(trackId);
+    const chosen = typeof name === 'string' ? name.trim().slice(0, MAX_NAME) : '';
+    if (!track || !chosen || chosen === track.name) return;
+
+    track.name = chosen;
+    this.names[trackId] = chosen;
+    this.broadcast();
+    this.saveNames();
+  }
+
   setVolume(trackId, volume) {
     const track = this.tracks.get(trackId);
     if (!track || typeof volume !== 'number' || !Number.isFinite(volume)) return;
 
     track.volume = Math.min(Math.max(volume, 0), 1);
+    this.broadcast();
+  }
+
+  /**
+   * Reorder the list. The Map's insertion order is the list order, so this
+   * rebuilds it; unmentioned ids keep their place at the end.
+   */
+  reorder(trackOrder) {
+    if (!Array.isArray(trackOrder)) return;
+
+    const ordered = new Map();
+    for (const trackId of trackOrder) {
+      const track = this.tracks.get(trackId);
+      if (track) ordered.set(trackId, track);
+    }
+    for (const [trackId, track] of this.tracks) {
+      if (!ordered.has(trackId)) ordered.set(trackId, track);
+    }
+
+    this.tracks = ordered;
     this.broadcast();
   }
 
@@ -112,6 +179,11 @@ class MusicModel {
 
     this.tracks.delete(trackId);
     this.broadcast();
+
+    if (trackId in this.names) {
+      delete this.names[trackId];
+      await this.saveNames();
+    }
 
     try {
       await fs.unlink(path.join(MUSIC_DIR, trackId));

@@ -6,82 +6,102 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DM Login</title>
   <link rel="icon" type="image/png" href="/MiniVTT_Logo_DM.png">
+  <link rel="stylesheet" href="/css/theme.css">
   <link rel="stylesheet" href="/css/styles.css">
   <style>
     body {
-      color: #f0f0f0;
-      font-family: 'Roboto', Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
       overflow: auto;
     }
 
     #login-container {
-      width: min(400px, calc(100vw - 40px));
-      margin: 100px auto;
-      padding: 30px;
-      box-sizing: border-box;
-      background-color: #2e2e2e;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
+      width: min(380px, 100%);
+      padding: 32px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.04);
+      box-shadow: var(--shadow);
       text-align: center;
     }
 
     #login-container img {
-      width: 100px;
-      margin-bottom: 20px;
+      width: 84px;
+      margin-bottom: 18px;
     }
 
     #login-container h1 {
-      margin: 0 0 20px;
+      margin: 0 0 8px;
+      font-size: 19px;
+      font-weight: 600;
     }
 
     #login-container p {
-      margin-bottom: 20px;
-      font-size: 14px;
-      line-height: 1.5;
-      color: #ccc;
+      margin: 0 0 22px;
+      color: var(--text-dim);
+      font-size: 13px;
+      line-height: 1.55;
     }
 
-    #login-container form {
+    #login-container code {
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.07);
+      font-size: 12px;
+    }
+
+    form {
       display: flex;
       flex-direction: column;
-      gap: 15px;
-      align-items: stretch;
+      gap: 10px;
     }
 
-    #login-container input[type="password"] {
-      padding: 10px;
-      border: 1px solid #555;
-      border-radius: 4px;
-      background-color: #3c3c3c;
-      color: #fff;
-      font-size: 16px;
+    input[type="password"] {
+      height: 38px;
+      padding: 0 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      background: rgba(0, 0, 0, 0.25);
+      color: var(--text);
+      font: inherit;
+      font-size: 14px;
     }
 
-    #login-container button {
-      padding: 10px 20px;
+    input[type="password"]:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    button {
+      height: 38px;
       border: none;
-      border-radius: 4px;
-      background-color: #007bff;
+      border-radius: var(--radius-sm);
+      background: var(--accent);
       color: #fff;
-      font-size: 16px;
+      font: inherit;
+      font-size: 14px;
       cursor: pointer;
+      transition: background var(--dur) var(--ease);
     }
 
-    #login-container button:hover {
-      background-color: #0069d9;
+    button:hover {
+      background: var(--accent-hover);
+    }
+
+    #error {
+      margin-bottom: 18px;
+      padding: 10px;
+      border-radius: var(--radius-sm);
+      background: var(--danger-dim);
+      color: #ffc4c4;
+      font-size: 13px;
     }
 
     #error[hidden] {
       display: none;
-    }
-
-    #error {
-      margin-bottom: 20px;
-      padding: 10px;
-      border-radius: 4px;
-      background-color: rgba(220, 53, 69, 0.15);
-      color: #ff8a94;
-      font-size: 14px;
     }
   </style>
 </head>

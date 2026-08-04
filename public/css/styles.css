@@ -1,35 +1,59 @@
-body {
-  font-family: 'Roboto', sans-serif;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  background-color: #1e1e1e;
+/* public/css/styles.css
+   The canvas and the tokens on it, shared by the DM and player views.
+   DM chrome lives in dm.css. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: var(--bg);
+  color: var(--text);
+  font-family: 'Roboto', ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- Scrollbars ---
+   Thin and unobtrusive everywhere, rather than per-container overrides. */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.32);
+}
+
+/* --- Canvas --- */
+
 #scene-container {
+  position: relative;
   width: 100vw;
   height: 100vh;
-  position: relative;
   overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: background-color 0.5s ease;
+  transition: background-color 0.5s var(--ease);
 
-  background: none;
-
-  /* disable selecting */
   user-select: none;
   -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-
-  /* disable dragging */
-  -webkit-user-drag: none;
-  -khtml-user-drag: none;
-  -moz-user-drag: none;
-  -o-user-drag: none;
-
 }
 
 /* Camera anchor. Everything in the scene hangs off this one element, so pan
@@ -38,18 +62,85 @@ body {
   position: absolute;
   top: 0;
   left: 0;
+  z-index: 1; /* above the empty state, below the marquee */
   transform-origin: 0 0;
+
+  /* One screen pixel in world units, written by SceneRenderer. Token chrome
+     multiplies by it to keep its weight at any zoom. */
+  --px: 1;
 }
 
 /* No transition on transform: it would animate every remote token movement,
    and it fights the rotation this property already carries. */
 .token {
   position: absolute;
-  transition: box-shadow 0.2s ease;
+  transition: opacity var(--dur) var(--ease), filter var(--dur) var(--ease);
 }
 
-/* Browsers refuse to play audio until the page has been interacted with, so
+/* --- Token state (DM view) ---
+   Two channels that never collide: a ring says who may move a token, the fade
+   says whether players can see it. A token can be both and reads as both.
+
+   Outlines and shadows only. A border would come out of the token's declared
+   size, insetting the media and leaving a dead band inside every ring. */
+
+.token.is-selected {
+  outline: calc(2px * var(--px)) solid var(--accent);
+}
+
+.token.is-interactive:hover:not(.is-selected) {
+  outline: calc(1px * var(--px)) solid var(--border-strong);
+}
+
+/* Hover lifts anything you can grab. drop-shadow follows the artwork's alpha,
+   haloing a cut-out rather than the rectangle it sits in. Only the hovered
+   token carries a filter. */
+.token.is-interactive:hover {
+  filter: drop-shadow(0 0 calc(9px * var(--px)) rgba(0, 0, 0, 0.65));
+}
+
+.token.is-hidden {
+  opacity: 0.4;
+  filter: saturate(0.35);
+}
+
+.token.is-hidden.is-interactive:hover {
+  filter: saturate(0.35) drop-shadow(0 0 calc(9px * var(--px)) rgba(0, 0, 0, 0.65));
+}
+
+/* Ring plus glow, so released tokens stand out. A shadow rather than an
+   outline, so a selected token can show both. */
+.token.is-movable {
+  box-shadow: 0 0 0 calc(2px * var(--px)) var(--movable),
+    0 0 calc(11px * var(--px)) calc(2px * var(--px)) var(--movable-glow);
+}
+
+/* Pushed out, so the selection outline keeps hugging the artwork. */
+.token.is-selected.is-movable {
+  box-shadow: 0 0 0 calc(4px * var(--px)) var(--movable),
+    0 0 calc(11px * var(--px)) calc(4px * var(--px)) var(--movable-glow);
+}
+
+/* --- Marquee --- */
+
+#marquee {
+  position: absolute;
+  z-index: 50;
+  display: none;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  background: var(--accent-dim);
+  pointer-events: none;
+}
+
+#marquee.active {
+  display: block;
+}
+
+/* --- Audio gate ---
+   Browsers refuse to play audio until the page has been interacted with, so
    players are asked once, up front. */
+
 #audio-overlay {
   position: fixed;
   inset: 0;
@@ -57,26 +148,29 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(30, 30, 30, 0.85);
+  background-color: rgba(22, 23, 26, 0.85);
+  backdrop-filter: blur(4px);
 }
 
 #enable-audio-button {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 20px 40px;
+  padding: 18px 34px;
   border: none;
-  border-radius: 8px;
-  background-color: #007bff;
+  border-radius: var(--radius);
+  background-color: var(--accent);
   color: #fff;
-  font-size: 18px;
+  font: inherit;
+  font-size: 16px;
   cursor: pointer;
+  transition: background-color var(--dur) var(--ease);
 }
 
 #enable-audio-button:hover {
-  background-color: #0069d9;
+  background-color: var(--accent-hover);
 }
 
 #enable-audio-button span {
-  font-size: 24px;
+  font-size: 22px;
 }

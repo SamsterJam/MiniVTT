@@ -30,6 +30,10 @@ export class SceneRenderer {
     // Read right to left: translate in world units, then scale the result.
     this.world.style.transform =
       `scale(${this.scale}) translate(${this.offsetX}px, ${this.offsetY}px)`;
+
+    // Token chrome is drawn inside this transform, so it would thicken as the
+    // camera moves in. Counter-scaled here, it stays a screen pixel wide.
+    this.world.style.setProperty('--px', 1 / this.scale);
   }
 
   resetCamera() {
@@ -76,35 +80,47 @@ export class SceneRenderer {
     this.resetCamera();
     this.clear();
     this.sceneId = scene.sceneId;
-    this.container.classList.add('has-scene');
 
     this.tokens = this.isDM ? scene.tokens : scene.tokens.filter((token) => !token.hidden);
     this.tokens.sort((a, b) => a.zIndex - b.zIndex);
     this.tokens.forEach((token) => this.renderToken(token));
 
+    this.markEmptiness();
     this.setBackgroundBasedOnTokens();
   }
 
-  /** Show nothing, which also restores the DM's help text. */
+  /** Show nothing, which also restores the DM's empty state. */
   clear() {
     this.world.replaceChildren();
     this.sceneId = null;
     this.tokens = [];
-    this.container.classList.remove('has-scene');
+    this.markEmptiness();
+  }
+
+  /** Drives the empty state: no scene reads differently to an empty one. */
+  markEmptiness() {
+    this.container.classList.toggle('has-scene', Boolean(this.sceneId));
+    this.container.classList.toggle('has-tokens', this.tokens.length > 0);
   }
 
   tokenFor(tokenId) {
     return this.tokens.find((token) => token.tokenId === tokenId);
   }
 
+  elementFor(tokenId) {
+    return document.getElementById(`token-${tokenId}`);
+  }
+
   addToken(token) {
     this.tokens.push(token);
     this.renderToken(token);
+    this.markEmptiness();
   }
 
   removeToken(tokenId) {
     this.tokens = this.tokens.filter((token) => token.tokenId !== tokenId);
-    document.getElementById(`token-${tokenId}`)?.remove();
+    this.elementFor(tokenId)?.remove();
+    this.markEmptiness();
   }
 
   renderToken(token) {
@@ -132,9 +148,9 @@ export class SceneRenderer {
     return element;
   }
 
-  /** Write a token's world-space geometry. The camera is not involved. */
+  /** Write a token's world-space geometry and state. The camera is not involved. */
   updateTokenElement(token) {
-    const element = document.getElementById(`token-${token.tokenId}`);
+    const element = this.elementFor(token.tokenId);
 
     if (!this.isDM && token.hidden) {
       element?.remove();
@@ -152,7 +168,12 @@ export class SceneRenderer {
     element.style.height = `${token.height}px`;
     element.style.transform = `rotate(${token.rotation}deg)`;
     element.style.zIndex = token.zIndex;
-    element.style.opacity = this.isDM && token.hidden ? '0.5' : '1';
+
+    // Classes, not inline styles: the two states would overwrite each other.
+    element.classList.toggle('is-hidden', this.isDM && Boolean(token.hidden));
+
+    // DM only; players learn a token is theirs by hovering it.
+    element.classList.toggle('is-movable', this.isDM && Boolean(token.movableByPlayers));
   }
 
   /** Tint the backdrop from the largest token, so a map blends into the page. */

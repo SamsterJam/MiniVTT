@@ -35,7 +35,7 @@ The interface supports panning and zooming so players can focus on different par
 
 **Drag-and-drop everything** - Drop images or videos directly onto the canvas to create tokens. Drop audio files to add music tracks.
 
-**Token controls** - Move, resize, rotate, and layer tokens. Toggle visibility to hide things from players. Give players permission to move specific tokens. All controlled by keyboard shortcuts or mouse interactions.
+**Token controls** - Move, resize, and layer tokens. Toggle visibility to hide things from players. Give players permission to move specific tokens. Select several at once by shift-clicking or dragging a marquee, and every action applies to the whole group.
 
 **Hidden tokens** - Keep tokens invisible to players until you're ready to reveal them. Good for surprises and fog of war.
 
@@ -53,11 +53,11 @@ The interface supports panning and zooming so players can focus on different par
 
 ## To-Do
 
-- [ ] Render the scene through a single world transform instead of per-token pixel math
-- [ ] Give the server authority over scene and music state so late joiners are in sync
-- [ ] Sortable music order in DM panel
-- [ ] Better documented hotkeys
-- [ ] Update/Improve DM interface & Multiselect
+- [x] Render the scene through a single world transform instead of per-token pixel math
+- [x] Give the server authority over scene and music state so late joiners are in sync
+- [x] Sortable music order in DM panel
+- [x] Better documented hotkeys
+- [x] Update/Improve DM interface & Multiselect
 - [ ] Token Rotation
 - [ ] Snap tokens to grid options
 
@@ -122,27 +122,45 @@ Navigate to `http://your-host:3000/dm` to access the DM interface where you can 
 ### Player View
 Players connect to `http://your-host:3000` and get a simplified view that only shows what the DM reveals.
 
+Press `?` in the DM view for the full shortcut list. It is generated from the
+same table that drives the keyboard and the selection bar, so it cannot go stale.
+
 ### Creating Scenes
-Click "Create Scene" in the DM panel, give it a name, and select it from the sidebar to make it active.
+Press `N` or the `+` on the toolbar. Scene tabs reorder by dragging, rename on
+double click, and offer rename / duplicate / delete on right click.
 
 ### Adding Tokens
-Drag and drop image or video files onto the canvas. Each file becomes a token you can manipulate.
+Drag and drop image or video files onto the canvas. Each file becomes a token
+you can manipulate.
+
+### Selecting (DM only)
+- Click to select, `Shift`/`Ctrl` click to add or remove
+- Drag on empty canvas to marquee select, `Ctrl+A` for everything, `Esc` to clear
+- Dragging a token moves it without selecting it
 
 ### Token Controls (DM only)
-- Click to select a token
-- Drag with mouse or use arrow keys to move
-- `[` / `]` - Move token down/up in the layer order (z-index)
-- `H` - Hide token from players
-- `I` - Toggle whether players can move this token
-- `Delete` - Remove token
-- `Ctrl+D` - Duplicate selected token
+- Drag to move, or nudge with the arrow keys (`Shift` for 10x)
+- Drag an edge to resize, holding `Shift` to break the aspect ratio
+- `[` / `]` - Move down/up in the layer order (z-index)
+- `H` - Hide from players
+- `I` - Toggle whether players can move it
+- `Ctrl+D` - Duplicate
+- `Delete` - Remove
+
+All of these apply to the whole selection, and appear as buttons on the
+selection bar whenever something is selected.
 
 ### Adding Music
-Drag audio files into the music drop area or use the Music Manager panel. Playback and volume sync across all clients.
+Drag audio files onto the music panel, or click the drop area to browse. Tracks
+reorder by their grip, rename in place on double click, and delete from the
+right click menu. Renaming stores a label rather than touching the file.
+Playback and volume sync across all clients.
 
 ### Other Shortcuts
 - `T` - Toggle DM toolbar
 - `M` - Toggle music panel
+- `?` - Toggle the shortcut list
+- `F2` - Rename current scene
 - `Shift+D` - Delete current scene (with confirmation)
 
 ---
@@ -161,6 +179,7 @@ Drag audio files into the music drop area or use the Music Manager panel. Playba
 │   ├── musicController.js
 │   └── uploadController.js
 ├── data
+│   ├── musicNames.json    // Track names the DM has chosen
 │   └── scenes             // Stored scene data
 ├── middlewares
 │   └── upload.js          // Shared upload handling for tokens and music
@@ -169,12 +188,14 @@ Drag audio files into the music drop area or use the Music Manager panel. Playba
 │   └── sceneModel.js      // Scene state, persistence, and the trust boundary
 └── public                 // Client-side files
     ├── css
-    │   ├── dm.css
-    │   └── styles.css
+    │   ├── dm.css         // DM chrome, all of it floating over the canvas
+    │   ├── styles.css     // The canvas and the tokens on it
+    │   └── theme.css      // Colors, radii, timings; the whole palette
     ├── dm-login.html
     ├── dm.html            // DM interface
     ├── index.html         // Player interface
     ├── js
+    │   ├── commands.js    // Every DM action: key, icon, and what it runs
     │   ├── dm.js
     │   ├── icons.js
     │   ├── musicManager.js
@@ -184,6 +205,7 @@ Drag audio files into the music drop area or use the Music Manager panel. Playba
     │   ├── sceneManager.js
     │   ├── sceneRenderer.js
     │   ├── tokenManager.js
+    │   ├── ui.js          // Dialogs, toasts, and context menus
     │   └── utils.js
     ├── music              // Uploaded audio files
     └── uploads            // Uploaded token images/videos
