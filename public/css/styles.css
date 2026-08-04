@@ -70,10 +70,12 @@ body {
   --px: 1;
 }
 
-/* No transition on transform: it would animate every remote token movement,
-   and it fights the rotation this property already carries. */
+/* Pinned to the world origin: the transform carries position and rotation both.
+   No transition on it, since script eases remote movement itself. */
 .token {
   position: absolute;
+  top: 0;
+  left: 0;
   transition: opacity var(--dur) var(--ease), filter var(--dur) var(--ease);
 }
 

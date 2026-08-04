@@ -99,7 +99,7 @@ export class SceneManager {
       if (!token) return;
 
       Object.assign(token, properties);
-      this.sceneRenderer.updateTokenElement(token);
+      this.sceneRenderer.updateTokenElement(token, { glide: true });
       this.tokenManager.setupTokenInteractions(token);
       this.renderSelection();
     });

@@ -4,6 +4,15 @@ import { extractDominantColor } from './utils.js';
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 5;
 
+const GLIDE_FIELDS = ['x', 'y', 'width', 'height', 'rotation'];
+
+// Remote moves arrive as throttled steps; easing into the latest one hides the
+// stepping. Time constant in ms, so motion trails by about this much.
+const GLIDE_TAU = 30;
+
+// World units left to cover before another frame stops being worth it.
+const GLIDE_EPSILON = 0.05;
+
 export class SceneRenderer {
   constructor(container, isDM = false) {
     this.container = container;
@@ -15,6 +24,10 @@ export class SceneRenderer {
     this.scale = 1;
     this.offsetX = 0;
     this.offsetY = 0;
+
+    this.drawn = new Map(); // tokenId -> geometry on screen
+    this.targets = new Map(); // tokenId -> geometry it is easing towards
+    this.glideFrame = null;
 
     // Tokens are laid out once in world coordinates and share this parent, so
     // the camera is one composited transform rather than a write per token.
@@ -94,6 +107,7 @@ export class SceneRenderer {
     this.world.replaceChildren();
     this.sceneId = null;
     this.tokens = [];
+    this.stopGliding();
     this.markEmptiness();
   }
 
@@ -120,6 +134,7 @@ export class SceneRenderer {
   removeToken(tokenId) {
     this.tokens = this.tokens.filter((token) => token.tokenId !== tokenId);
     this.elementFor(tokenId)?.remove();
+    this.forget(tokenId);
     this.markEmptiness();
   }
 
@@ -148,12 +163,16 @@ export class SceneRenderer {
     return element;
   }
 
-  /** Write a token's world-space geometry and state. The camera is not involved. */
-  updateTokenElement(token) {
+  /**
+   * Write a token's world-space geometry and state. The camera is not involved.
+   * Local changes land at once; pass `glide` for ones off the wire.
+   */
+  updateTokenElement(token, { glide = false } = {}) {
     const element = this.elementFor(token.tokenId);
 
     if (!this.isDM && token.hidden) {
       element?.remove();
+      this.forget(token.tokenId);
       return;
     }
 
@@ -162,11 +181,24 @@ export class SceneRenderer {
       return;
     }
 
-    element.style.left = `${token.x}px`;
-    element.style.top = `${token.y}px`;
-    element.style.width = `${token.width}px`;
-    element.style.height = `${token.height}px`;
-    element.style.transform = `rotate(${token.rotation}deg)`;
+    const geometry = {
+      x: token.x,
+      y: token.y,
+      width: token.width,
+      height: token.height,
+      rotation: token.rotation,
+    };
+
+    // Nothing drawn yet is nowhere to glide from, so the first write lands.
+    if (glide && this.drawn.has(token.tokenId)) {
+      this.targets.set(token.tokenId, geometry);
+      this.startGliding();
+    } else {
+      this.targets.delete(token.tokenId);
+      this.drawn.set(token.tokenId, geometry);
+      this.drawToken(element, geometry);
+    }
+
     element.style.zIndex = token.zIndex;
 
     // Classes, not inline styles: the two states would overwrite each other.
@@ -174,6 +206,70 @@ export class SceneRenderer {
 
     // DM only; players learn a token is theirs by hovering it.
     element.classList.toggle('is-movable', this.isDM && Boolean(token.movableByPlayers));
+  }
+
+  // --- Glide ---
+  // Position rides the transform, so a token in motion is composited rather
+  // than laying the scene out again every frame.
+
+  drawToken(element, { x, y, width, height, rotation }) {
+    element.style.width = `${width}px`;
+    element.style.height = `${height}px`;
+    element.style.transform = `translate(${x}px, ${y}px) rotate(${rotation}deg)`;
+  }
+
+  forget(tokenId) {
+    this.drawn.delete(tokenId);
+    this.targets.delete(tokenId);
+  }
+
+  stopGliding() {
+    if (this.glideFrame !== null) cancelAnimationFrame(this.glideFrame);
+    this.glideFrame = null;
+    this.drawn.clear();
+    this.targets.clear();
+  }
+
+  startGliding() {
+    if (this.glideFrame !== null) return;
+    this.lastGlide = performance.now();
+    this.glideFrame = requestAnimationFrame((now) => this.stepGlide(now));
+  }
+
+  stepGlide(now) {
+    // Measured, so the curve is the same at any refresh rate. Capped, so a tab
+    // coming back from the background does not jump.
+    const elapsed = Math.min(now - this.lastGlide, 100);
+    this.lastGlide = now;
+    const step = 1 - Math.exp(-elapsed / GLIDE_TAU);
+
+    for (const [tokenId, target] of this.targets) {
+      const element = this.elementFor(tokenId);
+      const current = this.drawn.get(tokenId);
+
+      // Gone mid-glide.
+      if (!element || !current) {
+        this.forget(tokenId);
+        continue;
+      }
+
+      let resting = true;
+      for (const field of GLIDE_FIELDS) {
+        const distance = target[field] - current[field];
+        if (Math.abs(distance) < GLIDE_EPSILON) {
+          current[field] = target[field];
+          continue;
+        }
+        current[field] += distance * step;
+        resting = false;
+      }
+
+      this.drawToken(element, current);
+      if (resting) this.targets.delete(tokenId);
+    }
+
+    this.glideFrame =
+      this.targets.size > 0 ? requestAnimationFrame((next) => this.stepGlide(next)) : null;
   }
 
   /** Tint the backdrop from the largest token, so a map blends into the page. */

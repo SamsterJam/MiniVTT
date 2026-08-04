@@ -44,7 +44,7 @@ socket.on('updateToken', ({ sceneId, tokenId, properties }) => {
   if (!token) return;
 
   Object.assign(token, properties);
-  sceneRenderer.updateTokenElement(token);
+  sceneRenderer.updateTokenElement(token, { glide: true });
   tokenManager.setupTokenInteractions(token);
 });
 
