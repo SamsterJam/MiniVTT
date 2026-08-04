@@ -1,76 +1,57 @@
 // socketHandler.js
+const Scene = require('./models/sceneModel');
+const session = require('./session');
 
-const Scene = require('./models/sceneModel'); // Make sure this path is correct
+// Playback state still lives in the DM's browser; the server only relays.
+const MUSIC_EVENTS = ['addTrack', 'playTrack', 'pauseTrack', 'setTrackVolume', 'deleteTrack'];
 
 module.exports = (io) => {
-  // Scene management
-  io.on('connection', (socket) => {
-    const role = socket.handshake.query.role || 'player';
-    socket.role = role;
-    socket.join(socket.role);
-    console.log('A user connected');
+  io.engine.use(session);
 
-    // Send the active scene ID to the client upon connection
+  // The page asks for a role, the session decides whether it gets it. Asking
+  // alone proves nothing, but it lets a DM open the player view in the same
+  // browser and be treated as a genuine player there.
+  io.use((socket, next) => {
+    const wantsDM = socket.handshake.query.role === 'dm';
+    socket.isDM = wantsDM && Boolean(socket.request.session?.isDM);
+    next();
+  });
+
+  io.on('connection', (socket) => {
+    const role = socket.isDM ? 'dm' : 'player';
+    socket.join(role);
+    console.log(`${role} connected (${socket.id})`);
+    socket.on('disconnect', () => console.log(`${role} disconnected (${socket.id})`));
+
     socket.emit('activeSceneId', Scene.activeSceneId);
 
-    // Handle socket events here
-    socket.on('loadScene', async ({ sceneId }) => {
-      try {
-        const scene = await Scene.loadScene(sceneId);
-        if (socket.role === 'player') {
-          const filteredTokens = scene.tokens.filter(token => !token.hidden);
-          const filteredScene = { ...scene, tokens: filteredTokens };
-          socket.emit('sceneData', filteredScene);
-        } else {
-          socket.emit('sceneData', scene);
-        }
-      } catch (err) {
-        console.error(err);
-        socket.emit('error', { message: 'Failed to load scene.' });
-      }
+    socket.on('loadScene', ({ sceneId } = {}) => {
+      const scene = Scene.sceneFor(sceneId, socket.isDM);
+      if (scene) socket.emit('sceneData', scene);
+      else socket.emit('error', { message: 'Scene not found.' });
     });
 
-    socket.on('changeScene', ({ sceneId }) => {
-      Scene.changeActiveScene(sceneId);
-      io.emit('activeSceneId', Scene.activeSceneId);
-    });
-
-    socket.on('updateToken', ({ sceneId, tokenId, properties }) => {
+    // Open to players too; the model decides what they may actually touch.
+    socket.on('updateToken', ({ sceneId, tokenId, properties } = {}) => {
       Scene.updateToken(sceneId, tokenId, properties, socket);
     });
 
-    socket.on('addToken', ({ sceneId, token }) => {
-      Scene.addToken(sceneId, token, io);
+    if (!socket.isDM) return;
+
+    // --- DM only ---
+    socket.on('changeScene', ({ sceneId } = {}) => {
+      Scene.setActiveScene(sceneId);
+      io.emit('activeSceneId', Scene.activeSceneId);
     });
 
-    socket.on('removeToken', async ({ sceneId, tokenId }) => {
-      await Scene.removeToken(sceneId, tokenId, io);
-    });
+    socket.on('addToken', ({ sceneId, token } = {}) => Scene.addToken(sceneId, token, socket));
 
-    // Music control events
-    socket.on('playTrack', (data) => {
-      socket.broadcast.emit('playTrack', data);
-    });
+    socket.on('removeToken', ({ sceneId, tokenId } = {}) =>
+      Scene.removeToken(sceneId, tokenId, socket)
+    );
 
-    socket.on('pauseTrack', (data) => {
-      socket.broadcast.emit('pauseTrack', data);
-    });
-
-    socket.on('setTrackVolume', (data) => {
-      socket.broadcast.emit('setTrackVolume', data);
-    });
-
-    socket.on('deleteTrack', (data) => {
-      socket.broadcast.emit('deleteTrack', data);
-    });
-
-    // When a new track is added on the DM side
-    socket.on('addTrack', (data) => {
-      socket.broadcast.emit('addTrack', data);
-    });
-
-    socket.on('disconnect', () => {
-      console.log('A user disconnected');
-    });
+    for (const event of MUSIC_EVENTS) {
+      socket.on(event, (data) => socket.broadcast.emit(event, data));
+    }
   });
 };

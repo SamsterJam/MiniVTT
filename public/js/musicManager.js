@@ -1,219 +1,197 @@
 // public/js/musicManager.js
+import { play, pause, trash } from './icons.js';
+
+// Perceived loudness follows a curve, so a linear slider needs bending first.
+const VOLUME_CURVE = 3;
+const DEFAULT_SLIDER = 50;
+const toVolume = (slider) => (slider / 100) ** VOLUME_CURVE;
 
 export class MusicManager {
   constructor(socket) {
     this.socket = socket;
-
-    // Music management properties
-    this.musicTracks = []; // List of uploaded music tracks with individual controls
-
-    // Initialize the music list in the UI
-    this.musicListElement = document.getElementById('music-list');
-
-    this.init();
+    this.tracks = [];
+    this.listElement = document.getElementById('music-list');
   }
 
-  init() {
-    this.setupSocketListeners();
-  }
-
-  // Method to add a music track
-  addMusicTrack(musicUrl, filename, displayName, trackId = null) {
-    // Generate a unique track ID if not provided
-    trackId = trackId || this.generateTrackId(filename);
-  
-    // Process name to remove leading numbers and hyphens/underscores
-    const displayNameProcessed = displayName || filename.replace(/^\d+\s*[-_]?\s*/, '');
-  
-    const audioElement = new Audio(musicUrl);
-    audioElement.loop = true;
-  
-    // Desired initial slider position
-    const initialSliderValue = 50;
-    const exponent = 3;
-  
-    // Calculate the initial volume based on the slider position and exponent
-    const initialVolume = Math.pow(initialSliderValue / 100, exponent);
-  
-    // Set the initial volume for the audio element
-    audioElement.volume = initialVolume;
-  
-    const track = {
-      trackId: trackId,
-      url: musicUrl,
-      filename: filename, // For deletion
-      name: displayNameProcessed,
-      audioElement: audioElement,
-      isPlaying: false,
-      volume: initialVolume,
-    };
-  
-    this.musicTracks.push(track);
-    this.renderMusicList(); 
-  }
-
-  // Generate a unique track ID
-  generateTrackId(filename) {
-    return `${filename}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
-  }
-
-  // Method to render the music list in the UI
-  renderMusicList() {
-    this.musicListElement.innerHTML = ''; // Clear existing list
-  
-    this.musicTracks.forEach((track, index) => {
-      const li = document.createElement('li');
-      li.classList.add('music-track-item');
-  
-      // Track Name
-      const trackNameSpan = document.createElement('span');
-      trackNameSpan.textContent = track.name;
-      trackNameSpan.classList.add('track-name');
-  
-      // Controls Container
-      const controlsContainer = document.createElement('div');
-      controlsContainer.classList.add('controls-container');
-  
-      // Play/Pause Button
-      const playPauseButton = document.createElement('button');
-      playPauseButton.classList.add('play-pause-button');
-      playPauseButton.innerHTML = '<i class="fas fa-play"></i>';
-      playPauseButton.addEventListener('click', () => this.togglePlayPause(index, playPauseButton));
-  
-      // Volume Slider
-      const volumeSlider = document.createElement('input');
-      volumeSlider.type = 'range';
-      volumeSlider.min = 0;
-      volumeSlider.max = 100;
-      volumeSlider.value = 50; // Initialize slider at half
-      volumeSlider.classList.add('volume-slider');
-
-      // Event listener for volume changes
-      volumeSlider.addEventListener('input', () => {
-        const sliderValue = volumeSlider.value;
-        const volume = Math.pow(sliderValue / 100, 3); // Exponential mapping for logarithmic perception
-        this.setTrackVolume(index, volume);
-      });
-  
-      // Delete Button
-      const deleteButton = document.createElement('button');
-      deleteButton.classList.add('delete-button');
-      deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
-      deleteButton.addEventListener('click', () => this.deleteMusicTrack(index));
-  
-      // Append controls to the controls container
-      controlsContainer.appendChild(playPauseButton);
-      controlsContainer.appendChild(volumeSlider);
-      controlsContainer.appendChild(deleteButton);
-  
-      // Append elements to the list item
-      li.appendChild(trackNameSpan);       // First line: Track name
-      li.appendChild(controlsContainer);   // Second line: Controls
-  
-      this.musicListElement.appendChild(li);
-    });
-  }
-
-  // Method to toggle play/pause
-  togglePlayPause(index, buttonElement) {
-    const track = this.musicTracks[index];
-    if (track.isPlaying) {
-      this.pauseTrack(index, buttonElement);
-    } else {
-      this.playTrack(index, buttonElement);
+  /** Load the tracks already on the server. */
+  async loadTracks() {
+    try {
+      const response = await fetch('/musicList');
+      const { success, tracks, message } = await response.json();
+      if (!success) throw new Error(message);
+      tracks.forEach((track) => this.addTrack(track));
+    } catch (err) {
+      console.error('Could not load the music list:', err.message);
     }
   }
 
-  // Method to play a track
-  playTrack(index, buttonElement) {
-    const track = this.musicTracks[index];
-    track.audioElement.play();
+  addTrack({ url, filename, name }) {
+    // The upload filename is already unique and, unlike a generated id, it
+    // stays the same across reloads -- so players never accumulate duplicates.
+    if (this.tracks.some((track) => track.trackId === filename)) return;
+
+    const audio = new Audio(url);
+    audio.loop = true;
+    audio.volume = toVolume(DEFAULT_SLIDER);
+
+    this.tracks.push({
+      trackId: filename,
+      url,
+      filename,
+      name,
+      audio,
+      isPlaying: false,
+      slider: DEFAULT_SLIDER,
+    });
+    this.render();
+  }
+
+  // --- Rendering ---
+  // The list is rebuilt from state, so play/pause icons and slider positions
+  // can never drift out of sync with what is actually playing.
+
+  render() {
+    this.listElement.replaceChildren(...this.tracks.map((track) => this.renderTrack(track)));
+  }
+
+  renderTrack(track) {
+    const name = document.createElement('span');
+    name.className = 'track-name';
+    name.textContent = track.name;
+    name.title = track.name;
+
+    const playButton = document.createElement('button');
+    playButton.className = 'play-pause-button';
+    playButton.innerHTML = track.isPlaying ? pause : play;
+    playButton.title = track.isPlaying ? 'Pause' : 'Play';
+    playButton.addEventListener('click', () => this.togglePlayback(track));
+
+    const volume = document.createElement('input');
+    volume.type = 'range';
+    volume.className = 'volume-slider';
+    volume.min = 0;
+    volume.max = 100;
+    volume.value = track.slider;
+    volume.title = 'Volume';
+    volume.addEventListener('input', () => this.setVolume(track, Number(volume.value)));
+
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'delete-button';
+    deleteButton.innerHTML = trash;
+    deleteButton.title = 'Delete track';
+    deleteButton.addEventListener('click', () => this.deleteTrack(track));
+
+    const controls = document.createElement('div');
+    controls.className = 'controls-container';
+    controls.append(playButton, volume, deleteButton);
+
+    const item = document.createElement('li');
+    item.className = 'music-track-item';
+    item.append(name, controls);
+    return item;
+  }
+
+  // --- Playback ---
+
+  togglePlayback(track) {
+    if (track.isPlaying) this.pause(track);
+    else this.play(track);
+  }
+
+  play(track) {
+    track.audio.play().catch((err) => console.error('Could not play track:', err));
     track.isPlaying = true;
-
-    // Update the play/pause button icon
-    buttonElement.innerHTML = '<i class="fas fa-pause"></i>';
-
-    // Notify players to play the track
     this.socket.emit('playTrack', {
       trackId: track.trackId,
       musicUrl: track.url,
-      currentTime: track.audioElement.currentTime,
-      volume: track.volume,
+      currentTime: track.audio.currentTime,
+      volume: track.audio.volume,
     });
+    this.render();
   }
 
-  // Method to pause a track
-  pauseTrack(index, buttonElement) {
-    const track = this.musicTracks[index];
-    track.audioElement.pause();
+  pause(track) {
+    track.audio.pause();
     track.isPlaying = false;
-
-    // Update the play/pause button icon
-    buttonElement.innerHTML = '<i class="fas fa-play"></i>';
-
-    // Notify players to pause the track
     this.socket.emit('pauseTrack', {
       trackId: track.trackId,
-      currentTime: track.audioElement.currentTime,
+      currentTime: track.audio.currentTime,
     });
+    this.render();
   }
 
-  // Method to set track volume
-  setTrackVolume(index, volume) {
-    const track = this.musicTracks[index];
-    track.audioElement.volume = volume;
-    track.volume = volume;
-
-    // Notify players to set volume
-    this.socket.emit('setTrackVolume', {
-      trackId: track.trackId,
-      volume,
-    });
+  setVolume(track, slider) {
+    track.slider = slider;
+    track.audio.volume = toVolume(slider);
+    this.socket.emit('setTrackVolume', { trackId: track.trackId, volume: track.audio.volume });
+    // Deliberately no re-render: it would replace the slider mid-drag.
   }
 
-  // Method to delete a music track
-  deleteMusicTrack(index) {
-    const track = this.musicTracks[index];
+  async deleteTrack(track) {
+    if (!confirm(`Delete "${track.name}"?`)) return;
 
-    // Confirm deletion
-    if (!confirm(`Are you sure you want to delete "${track.name}"?`)) {
+    try {
+      const response = await fetch('/deleteMusic', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ filename: track.filename }),
+      });
+      const { success, message } = await response.json();
+      if (!success) throw new Error(message);
+    } catch (err) {
+      console.error('Could not delete track:', err.message);
+      alert('Failed to delete music track.');
       return;
     }
 
-    fetch('/deleteMusic', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ filename: track.filename }) // Send the filename to the server
-    })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          // Stop and remove the audio element
-          track.audioElement.pause();
-          track.audioElement.src = '';
-          track.audioElement = null;
-
-          // Remove the track from the array
-          this.musicTracks.splice(index, 1);
-          this.renderMusicList(); // Update the music list
-
-          // Notify players to delete the track
-          this.socket.emit('deleteTrack', {
-            trackId: track.trackId,
-          });
-        } else {
-          alert('Failed to delete music track.');
-        }
-      })
-      .catch(err => {
-        console.error('Error deleting music track:', err);
-      });
+    track.audio.pause();
+    track.audio.src = '';
+    this.tracks = this.tracks.filter((candidate) => candidate !== track);
+    this.render();
+    this.socket.emit('deleteTrack', { trackId: track.trackId });
   }
 
-  // Socket event listeners
-  setupSocketListeners() {
-    // Music control events from the server (if needed on DM side)
+  // --- Uploading ---
+
+  /** Turn an element into a drop target that uploads the audio dropped on it. */
+  attachDropTarget(element) {
+    const setActive = (active) => element.classList.toggle('dragover', active);
+
+    element.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      setActive(true);
+    });
+    element.addEventListener('dragleave', () => setActive(false));
+    element.addEventListener('drop', (event) => {
+      event.preventDefault();
+      setActive(false);
+      this.uploadFiles(event.dataTransfer.files);
+    });
+  }
+
+  async uploadFiles(files) {
+    const audioFiles = [...files].filter((file) => file.type.startsWith('audio/'));
+    if (audioFiles.length !== files.length) alert('Only audio files can be added as music.');
+
+    for (const file of audioFiles) {
+      const body = new FormData();
+      body.append('music', file);
+
+      try {
+        const response = await fetch('/uploadMusic', { method: 'POST', body });
+        const { success, track, message } = await response.json();
+        if (!success) throw new Error(message);
+
+        this.addTrack(track);
+        this.socket.emit('addTrack', {
+          trackId: track.filename,
+          musicUrl: track.url,
+          name: track.name,
+        });
+      } catch (err) {
+        console.error(`Could not upload ${file.name}:`, err.message);
+        alert(`Failed to upload "${file.name}".`);
+      }
+    }
   }
 }

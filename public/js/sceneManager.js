@@ -2,6 +2,8 @@
 
 import { extractDominantColor } from './utils.js';
 
+const newTokenId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+
 export class SceneManager {
   constructor(socket, sceneRenderer, tokenManager, sceneContainer) {
     this.socket = socket;
@@ -205,6 +207,12 @@ export class SceneManager {
   }
 
   onKeyDown(event) {
+    // Never steal a keystroke that belongs to a form control.
+    const target = event.target;
+    if (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) {
+      return;
+    }
+
     if (this.selectedTokenId && event.key === ']') {
       this.moveTokenZIndexUp(this.selectedTokenId);
     } else if (this.selectedTokenId && event.key === '[') {
@@ -220,10 +228,9 @@ export class SceneManager {
     } else if (this.selectedTokenId && event.key.toLowerCase() === 'i') {
       this.toggleTokenMovableByPlayers(this.selectedTokenId);
     } else if (event.key.toLowerCase() === 't') {
-      this.toggleToolbar();
+      document.body.classList.toggle('toolbar-hidden');
     } else if (event.key.toLowerCase() === 'm') {
-      const musicPanel = document.getElementById('music-panel');
-      musicPanel.classList.toggle('hidden');
+      document.body.classList.toggle('music-hidden');
     } else if (event.shiftKey && event.key.toLowerCase() === 'd') {
       // Shift + D pressed: Prompt to delete the current scene
       if (this.currentScene) {
@@ -242,7 +249,7 @@ export class SceneManager {
     const token = this.currentScene.tokens.find((t) => t.tokenId === tokenId);
     if (token) {
       token.hidden = !token.hidden;
-  
+
       // Update the token's visual representation
       const element = document.getElementById(`token-${tokenId}`);
       if (element) {
@@ -253,7 +260,7 @@ export class SceneManager {
           element.style.opacity = '1';
         }
       }
-  
+
       // Send update to server
       this.socket.emit('updateToken', {
         sceneId: this.currentScene.sceneId,
@@ -268,34 +275,34 @@ export class SceneManager {
     if (originalToken) {
       // Clone the original token
       const newToken = JSON.parse(JSON.stringify(originalToken));
-  
+
       // Generate a new unique tokenId
-      newToken.tokenId = Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9);
-  
+      newToken.tokenId = newTokenId();
+
       // Offset the new token's position slightly
       const offset = 20; // Adjust as needed
       newToken.x = originalToken.x + offset;
       newToken.y = originalToken.y + offset;
       newToken.zIndex = originalToken.zIndex + 1;
-  
+
       // Add the new token to the current scene's tokens array
       this.currentScene.tokens.push(newToken);
-  
+
       // Notify the server about the new token
       this.socket.emit('addToken', { sceneId: this.currentScene.sceneId, token: newToken });
-  
+
       // Render the new token
       this.sceneRenderer.renderToken(newToken);
-  
+
       // Setup interactions for the new token
       this.tokenManager.setupTokenInteractions(newToken);
-  
+
       // Add event listener for token selection
       const element = document.getElementById(`token-${newToken.tokenId}`);
       if (element) {
         element.addEventListener('click', (event) => this.onTokenClick(event, newToken.tokenId));
       }
-  
+
       // Optionally, select the new token
       // Unselect previous token
       if (this.selectedTokenId) {
@@ -317,19 +324,19 @@ export class SceneManager {
     const tokens = this.currentScene.tokens;
     tokens.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
     const index = tokens.findIndex(t => t.tokenId === tokenId);
-  
+
     if (index < tokens.length - 1) {
       const token = tokens[index];
       const nextToken = tokens[index + 1];
-  
+
       // Swap zIndex values
       const tempZIndex = token.zIndex;
       token.zIndex = nextToken.zIndex;
       nextToken.zIndex = tempZIndex;
-  
+
       // Mark scene as dirty
       this.currentScene.dirty = true;
-  
+
       // Emit updateToken events for both tokens
       this.socket.emit('updateToken', {
         sceneId: this.currentScene.sceneId,
@@ -341,7 +348,7 @@ export class SceneManager {
         tokenId: nextToken.tokenId,
         properties: { zIndex: nextToken.zIndex },
       });
-  
+
       // Update the DOM elements
       this.sceneRenderer.updateTokenElement(token);
       this.sceneRenderer.updateTokenElement(nextToken);
@@ -352,19 +359,19 @@ export class SceneManager {
     const tokens = this.currentScene.tokens;
     tokens.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
     const index = tokens.findIndex(t => t.tokenId === tokenId);
-  
+
     if (index > 0) {
       const token = tokens[index];
       const prevToken = tokens[index - 1];
-  
+
       // Swap zIndex values
       const tempZIndex = token.zIndex;
       token.zIndex = prevToken.zIndex;
       prevToken.zIndex = tempZIndex;
-  
+
       // Mark scene as dirty
       this.currentScene.dirty = true;
-  
+
       // Emit updateToken events for both tokens
       this.socket.emit('updateToken', {
         sceneId: this.currentScene.sceneId,
@@ -376,19 +383,10 @@ export class SceneManager {
         tokenId: prevToken.tokenId,
         properties: { zIndex: prevToken.zIndex },
       });
-  
+
       // Update the DOM elements
       this.sceneRenderer.updateTokenElement(token);
       this.sceneRenderer.updateTokenElement(prevToken);
-    }
-  }
-
-  toggleToolbar() {
-    const toolbar = document.getElementById('toolbar');
-    if (toolbar.style.top === '0px' || toolbar.style.top === '') {
-      toolbar.style.top = '-50px'; // Adjust this value based on the toolbar height
-    } else {
-      toolbar.style.top = '0px';
     }
   }
 
@@ -523,54 +521,53 @@ export class SceneManager {
   onDrop(event) {
     event.preventDefault();
     this.sceneContainer.classList.remove('dragover');
-  
+
     if (!this.currentScene) {
       alert('Please load or create a scene first.');
       return;
     }
-  
+
     const files = event.dataTransfer.files;
     if (files.length > 0) {
       this.processDroppedFiles(files, event);
     }
   }
-  
+
   async processDroppedFiles(files, event) {
     for (const file of files) {
       await this.processFile(file, event);
     }
   }
-  
+
   async processFile(file, event) {
     // Extract the file name without the extension
     const fileName = file.name.split('.').slice(0, -1).join('.');
-  
+
     const formData = new FormData();
     formData.append('file', file);
-  
+
     try {
       const response = await fetch('/upload', {
         method: 'POST',
         body: formData,
       });
       const data = await response.json();
-  
+
       const imageUrl = data.imageUrl;
       const mediaType = data.mediaType;
-  
+
       // Get the drop position relative to the scene container
       const rect = this.sceneContainer.getBoundingClientRect();
       const x = (event.clientX - rect.left) / this.sceneRenderer.scale - this.sceneRenderer.offsetX;
       const y = (event.clientY - rect.top) / this.sceneRenderer.scale - this.sceneRenderer.offsetY;
-  
+
       let width, height;
-  
+
       // Function to create the token after media dimensions are available
       const createToken = () => {
         // Create a new token
         const token = {
-          tokenId: Date.now().toString() + '-' + Math.random().toString(36).substr(2, 9),
-          sceneId: this.currentScene.sceneId,
+          tokenId: newTokenId(),
           imageUrl: imageUrl,
           mediaType: mediaType,
           x: x,
@@ -582,7 +579,7 @@ export class SceneManager {
           movableByPlayers: false,
           name: fileName,
         };
-  
+
         // Add token to the scene
         this.currentScene.tokens.push(token);
         // Save the scene on the server
@@ -591,29 +588,29 @@ export class SceneManager {
         this.sceneRenderer.renderToken(token);
         // Setup interactions
         this.tokenManager.setupTokenInteractions(token);
-  
+
         // Add click event listener for token selection
         const element = document.getElementById(`token-${token.tokenId}`);
         if (element) {
           element.addEventListener('click', (event) => this.onTokenClick(event, token.tokenId));
         }
       };
-  
+
       // Load the image or video to get its dimensions
       if (mediaType === 'video') {
         const video = document.createElement('video');
         video.src = imageUrl;
-  
+
         // Wrap the event listener in a Promise to use await
         await new Promise((resolve, reject) => {
           video.addEventListener('loadedmetadata', () => {
             const videoWidth = video.videoWidth;
             const videoHeight = video.videoHeight;
-  
+
             const maxDimension = 200; // Adjust as needed
             width = videoWidth;
             height = videoHeight;
-  
+
             // Scale dimensions if necessary
             if (width > height) {
               if (width > maxDimension) {
@@ -628,11 +625,11 @@ export class SceneManager {
                 width = width * scale;
               }
             }
-  
+
             createToken();
             resolve();
           });
-  
+
           video.addEventListener('error', (error) => {
             console.error('Error loading video:', error);
             reject(error);
@@ -641,17 +638,17 @@ export class SceneManager {
       } else {
         // Handle images
         const image = new Image();
-  
+
         // Wrap the event listener in a Promise to use await
         await new Promise((resolve, reject) => {
           image.onload = () => {
             const imageWidth = image.naturalWidth;
             const imageHeight = image.naturalHeight;
-  
+
             const maxDimension = 200; // Adjust as needed
             width = imageWidth;
             height = imageHeight;
-  
+
             // Scale dimensions if necessary
             if (width > height) {
               if (width > maxDimension) {
@@ -666,16 +663,16 @@ export class SceneManager {
                 width = width * scale;
               }
             }
-  
+
             createToken();
             resolve();
           };
-  
+
           image.onerror = (error) => {
             console.error('Error loading image:', error);
             reject(error);
           };
-  
+
           image.src = imageUrl;
         });
       }

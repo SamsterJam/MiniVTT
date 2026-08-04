@@ -4,7 +4,7 @@ import { SceneRenderer } from './sceneRenderer.js';
 import { PanZoomHandler } from './panZoomHandler.js';
 import { TokenManager } from './tokenManager.js';
 
-const socket = io({ query: { role: 'player' } });
+const socket = io();
 
 let currentScene = null;
 
@@ -34,15 +34,11 @@ socket.on('sceneData', (scene) => {
   renderScene(scene);
 });
 
-// Function to render a scene
+// Function to render a scene. The server never sends hidden tokens to a
+// player, so everything that arrives here is meant to be seen.
 function renderScene(scene) {
-  const visibleTokens = scene.tokens.filter(token => !token.hidden);
-  const sceneCopy = Object.assign({}, scene, { tokens: visibleTokens });
-  sceneRenderer.renderScene(sceneCopy);
-
-  visibleTokens.forEach((token) => {
-    tokenManager.setupTokenInteractions(token);
-  });
+  sceneRenderer.renderScene(scene);
+  scene.tokens.forEach((token) => tokenManager.setupTokenInteractions(token));
 }
 
 // Handle token updates from the server
@@ -232,13 +228,5 @@ socket.on('setTrackVolume', (data) => {
   if (track) {
     track.audioElement.volume = volume;
     track.volume = volume;
-  }
-});
-
-// Ensure audio elements are not autoplaying without user interaction
-document.addEventListener('DOMContentLoaded', () => {
-  // Check if audio has already been enabled
-  if (!audioEnabled) {
-    enableAudioButton.style.display = 'block';
   }
 });

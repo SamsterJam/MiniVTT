@@ -1,20 +1,25 @@
 {
   "name": "minivtt",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "A lightweight & minimal web-based VTT",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
+  "engines": {
+    "node": ">=18"
+  },
   "keywords": [],
   "author": "SamsterJam",
   "license": "ISC",
-  "description": "A lightweight & minimal web-based VTT",
   "dependencies": {
     "express": "^4.21.1",
     "express-session": "^1.18.1",
+    "interactjs": "^1.10.28",
     "multer": "^1.4.5-lts.1",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.1",
+    "sortablejs": "^1.15.7"
   },
   "devDependencies": {
     "nodemon": "^3.1.7"

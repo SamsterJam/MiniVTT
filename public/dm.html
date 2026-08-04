@@ -1,47 +1,33 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Mini VTT DM</title>
   <link rel="stylesheet" href="/css/styles.css">
   <link rel="stylesheet" href="/css/dm.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link rel="icon" type="image/x-icon" href="./MiniVTT_Logo_DM.png">
+  <link rel="icon" type="image/png" href="/MiniVTT_Logo_DM.png">
 </head>
 
 <body>
   <div id="toolbar">
-    <!-- Create Scene -->
-    <button id="create-scene-button" style="background-color: rgba(200, 255, 200, 0.2); margin-right: 10px;"
-      onmouseover="this.style.backgroundColor='rgba(200, 255, 200, 0.3)'"
-      onmouseout="this.style.backgroundColor='rgba(200, 255, 200, 0.2)'">Create Scene</button>
-
-    <!-- Vertical Separator -->
-    <div style="height: 20px; width: 1px; background-color: #555; margin-right: 10px;"></div>
-
-    <!-- Scene Buttons -->
+    <button id="create-scene-button">Create Scene</button>
+    <div class="separator"></div>
     <div id="scene-buttons-container">
-      <!-- Scene buttons will be dynamically added here -->
+      <!-- Scene buttons are added here at runtime -->
     </div>
   </div>
 
-  <!-- Music Control Panel -->
   <div id="music-panel">
     <h3>Music Control</h3>
-    <!-- Music Upload via Drag and Drop -->
-    <div id="music-drop-area" style="border: 2px dashed #ccc; padding: 20px; margin-bottom: 20px; text-align: center;">
-      Drag and drop music files here to upload
-    </div>
-
-    <!-- Music List -->
+    <div id="music-drop-area">Drag and drop music files here to upload</div>
     <ul id="music-list">
-      <!-- Music tracks will be dynamically added here -->
+      <!-- Music tracks are added here at runtime -->
     </ul>
   </div>
 
   <div id="scene-container">
-    <!-- Scene canvas -->
     <div class="instructions">
       <p>Create or select a scene, then drag and drop images here to add tokens to your scene.</p>
       <p>- Delete token with [DEL]</p>
@@ -52,13 +38,10 @@
     </div>
   </div>
 
-  <!-- Include Interact.js -->
-  <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
-  <!-- Include Socket.io client -->
+  <script src="/vendor/interact/interact.min.js"></script>
+  <script src="/vendor/sortable/Sortable.min.js"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <!-- DM script -->
   <script type="module" src="/js/dm.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
 </body>
 
 </html>

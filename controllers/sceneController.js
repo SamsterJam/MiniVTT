@@ -1,68 +1,29 @@
 // controllers/sceneController.js
 const Scene = require('../models/sceneModel');
 
-// Function to create a new scene
-exports.createScene = async (req, res) => {
-  const { sceneName } = req.body;
-  const sceneId = Date.now().toString();
+exports.getScenes = (req, res) => {
+  res.json({ scenes: Scene.listScenes() });
+};
 
-  const newScene = {
-    sceneId,
-    sceneName,
-    tokens: [],
-  };
-
-  // Save the new scene immediately
-  await Scene.saveScene(newScene);
-  Scene.addScene(newScene);
-
+exports.createScene = (req, res) => {
+  const { sceneId } = Scene.createScene(req.body.sceneName);
   res.json({ sceneId });
 };
 
-// Function to get the list of scenes
-exports.getScenes = (req, res) => {
-  Scene.getAllScenes()
-    .then((scenes) => {
-      res.json({ scenes });
-    })
-    .catch((err) => {
-      console.error('Error getting scenes:', err);
-      res.status(500).send('Error getting scenes.');
-    });
-};
-
-// Function to update a scene
-exports.updateScene = async (req, res) => {
-  const { scene } = req.body;
-  try {
-    await Scene.updateScene(scene);
-    res.json({ message: 'Scene updated.' });
-  } catch (err) {
-    console.error('Error updating scene:', err);
-    res.status(500).send('Error updating scene.');
-  }
-};
-
-// Function to delete a scene
 exports.deleteScene = async (req, res) => {
-  const { sceneId } = req.body;
   try {
-    await Scene.deleteScene(sceneId);
+    await Scene.deleteScene(req.body.sceneId);
     res.json({ success: true });
   } catch (err) {
-    console.error('Error deleting scene:', err);
-    res.status(500).json({ success: false, message: 'Error deleting scene.' });
+    res.status(404).json({ success: false, message: err.message });
   }
 };
 
-// Function to update scene order
-exports.updateSceneOrder = async (req, res) => {
+exports.updateSceneOrder = (req, res) => {
   const { sceneOrder } = req.body;
-  try {
-    await Scene.updateSceneOrder(sceneOrder);
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Error updating scene order:', err);
-    res.json({ success: false, message: 'Failed to update scene order' });
+  if (!Array.isArray(sceneOrder)) {
+    return res.status(400).json({ success: false, message: 'sceneOrder must be an array.' });
   }
+  Scene.reorderScenes(sceneOrder);
+  res.json({ success: true });
 };

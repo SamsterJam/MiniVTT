@@ -37,9 +37,35 @@ body {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-#viewport {
-  width: 100%;
-  height: 100%;
-  /* overflow: hidden; */
-  position: relative;
+/* Browsers refuse to play audio until the page has been interacted with, so
+   players are asked once, up front. */
+#audio-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(30, 30, 30, 0.85);
+}
+
+#enable-audio-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 40px;
+  border: none;
+  border-radius: 8px;
+  background-color: #007bff;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+#enable-audio-button:hover {
+  background-color: #0069d9;
+}
+
+#enable-audio-button span {
+  font-size: 24px;
 }

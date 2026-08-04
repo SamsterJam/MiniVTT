@@ -1,32 +1,44 @@
-const app = require('./app');
+// server.js
 const http = require('http');
-const socketIo = require('socket.io');
+const { Server } = require('socket.io');
+
+const app = require('./app');
+const config = require('./config');
+const Scene = require('./models/sceneModel');
+
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = new Server(server);
 
-// Generate a random password
-function generatePassword(length = 10) {
-  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let password = '';
-  for (let i = 0; i < length; i++) {
-    password += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return password;
-}
+require('./socketHandler')(io);
 
-// Use ANSI escape codes for bold and green text
 const bold = '\x1b[1m';
 const green = '\x1b[32m';
 const reset = '\x1b[0m';
 
-app.locals.dmPassword = generatePassword();
-console.log(`${bold}DM Password: ${green}${app.locals.dmPassword}${reset}`);
+async function start() {
+  // Read every scene up front; the model relies on holding all of them.
+  await Scene.load();
 
-// Initialize socket handlers
-require('./socketHandler')(io);
+  server.listen(config.port, () => {
+    console.log(`MiniVTT is running on port ${config.port}`);
+    if (config.dmPasswordIsGenerated) {
+      console.log(`${bold}DM Password: ${green}${config.dmPassword}${reset}`);
+      console.log('Set DM_PASSWORD and SESSION_SECRET to keep these stable across restarts.');
+    }
+  });
+}
 
-// Start the server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+// Flush anything the autosave has not written yet before exiting.
+async function shutdown() {
+  console.log('\nSaving scenes...');
+  await Scene.flush();
+  process.exit(0);
+}
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+start().catch((err) => {
+  console.error('Failed to start:', err);
+  process.exit(1);
 });

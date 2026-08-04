@@ -5,6 +5,7 @@ export class SceneRenderer {
   constructor(container, isDM = false) {
     this.container = container;
     this.isDM = isDM;
+    this.sceneId = null;
     this.tokens = [];
     this.scale = 1;
     this.offsetX = 0;
@@ -14,22 +15,25 @@ export class SceneRenderer {
   renderScene(scene) {
     this.resetCamera();
     this.container.innerHTML = ''; // Clear existing content
-  
+
+    // Tracked here so tokens don't each have to carry a copy of the scene id.
+    this.sceneId = scene.sceneId;
+
     // For DM, include all tokens; for players, include only visible tokens
     if (this.isDM) {
       this.tokens = scene.tokens;
     } else {
       this.tokens = scene.tokens.filter(token => !token.hidden);
     }
-  
+
     // Sort tokens by zIndex
     this.tokens.sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0));
-  
+
     // Render tokens
     this.tokens.forEach((token) => {
       this.renderToken(token);
     });
-  
+
     // Adjust background color based on tokens
     this.setBackgroundBasedOnTokens();
   }
@@ -87,14 +91,14 @@ export class SceneRenderer {
   // Update a single token element's position and size
   updateTokenElement(token) {
     const element = document.getElementById(`token-${token.tokenId}`);
-  
+
     if (!this.isDM && token.hidden) {
       if (element && element.parentNode === this.container) {
         this.container.removeChild(element);
       }
       return;
     }
-  
+
     if (element) {
       // Update element style
       element.style.left = `${(token.x + this.offsetX) * this.scale}px`;
@@ -103,7 +107,7 @@ export class SceneRenderer {
       element.style.height = `${token.height * this.scale}px`;
       element.style.transform = `rotate(${token.rotation}deg)`;
       element.style.zIndex = token.zIndex || 0;
-  
+
       if (this.isDM && token.hidden) {
         element.style.opacity = '0.5';
       } else {
@@ -149,40 +153,40 @@ export class SceneRenderer {
         video.src = largestToken.imageUrl;
         video.crossOrigin = 'Anonymous'; // May be needed for CORS
         video.muted = true; // Mute the video to avoid autoplay issues
-    
+
         // Set up an event listener for when the video is ready to play
         video.oncanplay = () => {
           // Play the video briefly to make sure we get a non-black frame
           video.play();
-    
+
           // Wait a short amount of time (e.g., 1 second) to allow the video to display
           setTimeout(() => {
             // Create a canvas to capture the first visible frame
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-    
+
             // Ensure the canvas matches the video size
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
-    
+
             // Draw the current frame of the video onto the canvas
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    
+
             // Get the pixel data from the canvas (top-left corner)
             const imageData = ctx.getImageData(0, 0, 1, 1); // Get the color of the top-left pixel
             const [r, g, b] = imageData.data;
-    
+
             // Format the color as an RGB string
             const dominantColor = `rgb(${r},${g},${b})`;
-    
+
             // Set the background color of the scene container
             this.container.style.backgroundColor = dominantColor;
-    
+
             // Pause the video after capturing the frame
             video.pause();
           }, 1000); // 1 second delay before capturing the frame
         };
-    
+
         // Start loading the video
         video.load();
       }

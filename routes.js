@@ -1,57 +1,61 @@
 // routes.js
 const express = require('express');
-const router = express.Router();
+const crypto = require('crypto');
 const path = require('path');
 
-// Controllers
+const config = require('./config');
 const sceneController = require('./controllers/sceneController');
 const uploadController = require('./controllers/uploadController');
 const musicController = require('./controllers/musicController');
 
-// Middleware to check if user is authenticated as DM
-function checkDMAuth(req, res, next) {
-  if (req.session && req.session.isDM) {
-    next();
-  } else {
-    res.redirect('/dm-login');
-  }
+const router = express.Router();
+const page = (name) => path.join(__dirname, 'public', name);
+
+function requireDM(req, res, next) {
+  if (req.session?.isDM) return next();
+  res.redirect('/dm-login');
 }
 
-// Route for DM login form
-router.get('/dm-login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'dm-login.html'));
-});
+/** Compare in constant time so the password cannot be recovered by timing. */
+function passwordMatches(input) {
+  const given = Buffer.from(String(input ?? ''));
+  const expected = Buffer.from(config.dmPassword);
+  return given.length === expected.length && crypto.timingSafeEqual(given, expected);
+}
 
-// Handle DM login
+// --- DM authentication ---
+
+router.get('/dm-login', (req, res) => res.sendFile(page('dm-login.html')));
+
 router.post('/dm-login', (req, res) => {
-  const password = req.body.password;
-  if (password === req.app.locals.dmPassword) {
+  if (!passwordMatches(req.body.password)) return res.redirect('/dm-login?error=1');
+
+  // A fresh session id on login closes off session fixation.
+  req.session.regenerate((err) => {
+    if (err) return res.redirect('/dm-login?error=1');
     req.session.isDM = true;
-    res.redirect('/dm');
-  } else {
-    res.send('Incorrect password. <a href="/dm-login">Try again</a>');
-  }
+    req.session.save(() => res.redirect('/dm'));
+  });
 });
 
-// Route for DM interface, protected
-router.get('/dm', checkDMAuth, (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'dm.html'));
+router.post('/dm-logout', (req, res) => {
+  req.session.destroy(() => res.redirect('/'));
 });
 
-// Protect other DM-specific routes
-// Scene Routes
-router.post('/createScene', checkDMAuth, sceneController.createScene);
-router.get('/scenes', sceneController.getScenes); // Players can view scenes
-router.post('/updateScene', checkDMAuth, sceneController.updateScene);
-router.post('/deleteScene', checkDMAuth, sceneController.deleteScene);
-router.post('/updateSceneOrder', checkDMAuth, sceneController.updateSceneOrder);
+router.get('/dm', requireDM, (req, res) => res.sendFile(page('dm.html')));
 
-// Upload Routes
-router.post('/upload', checkDMAuth, uploadController.uploadFile);
+// --- Scenes ---
 
-// Music Routes
-router.post('/uploadMusic', checkDMAuth, musicController.uploadMusic);
-router.get('/musicList', musicController.getMusicList); // Players can get music list
-router.post('/deleteMusic', checkDMAuth, musicController.deleteMusic);
+router.get('/scenes', sceneController.getScenes); // players need the list too
+router.post('/createScene', requireDM, sceneController.createScene);
+router.post('/deleteScene', requireDM, sceneController.deleteScene);
+router.post('/updateSceneOrder', requireDM, sceneController.updateSceneOrder);
+
+// --- Media ---
+
+router.post('/upload', requireDM, uploadController.uploadFile);
+router.get('/musicList', musicController.getMusicList); // players need the list too
+router.post('/uploadMusic', requireDM, musicController.uploadMusic);
+router.post('/deleteMusic', requireDM, musicController.deleteMusic);
 
 module.exports = router;

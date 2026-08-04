@@ -1,86 +1,110 @@
-<!-- public/dm-login.html -->
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DM Login</title>
+  <link rel="icon" type="image/png" href="/MiniVTT_Logo_DM.png">
   <link rel="stylesheet" href="/css/styles.css">
-  <link rel="stylesheet" href="/css/dm.css">
   <style>
-    /* Additional styling for the login page */
     body {
-      background-color: #1e1e1e;
       color: #f0f0f0;
-      font-family: Arial, sans-serif;
+      font-family: 'Roboto', Arial, sans-serif;
+      overflow: auto;
     }
 
     #login-container {
-      width: 400px;
+      width: min(400px, calc(100vw - 40px));
       margin: 100px auto;
       padding: 30px;
+      box-sizing: border-box;
       background-color: #2e2e2e;
       border-radius: 8px;
       box-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
       text-align: center;
     }
 
-    #login-container h1 {
+    #login-container img {
+      width: 100px;
       margin-bottom: 20px;
+    }
+
+    #login-container h1 {
+      margin: 0 0 20px;
     }
 
     #login-container p {
       margin-bottom: 20px;
       font-size: 14px;
+      line-height: 1.5;
       color: #ccc;
     }
 
     #login-container form {
       display: flex;
       flex-direction: column;
-      align-items: center;
-    }
-
-    #login-container label {
-      margin-bottom: 10px;
-      font-size: 16px;
+      gap: 15px;
+      align-items: stretch;
     }
 
     #login-container input[type="password"] {
-      width: 80%;
       padding: 10px;
-      margin-bottom: 20px;
-      border: none;
+      border: 1px solid #555;
       border-radius: 4px;
+      background-color: #3c3c3c;
+      color: #fff;
+      font-size: 16px;
     }
 
     #login-container button {
       padding: 10px 20px;
-      background-color: #4caf50;
       border: none;
       border-radius: 4px;
+      background-color: #007bff;
       color: #fff;
       font-size: 16px;
       cursor: pointer;
     }
 
     #login-container button:hover {
-      background-color: #45a049;
+      background-color: #0069d9;
+    }
+
+    #error[hidden] {
+      display: none;
+    }
+
+    #error {
+      margin-bottom: 20px;
+      padding: 10px;
+      border-radius: 4px;
+      background-color: rgba(220, 53, 69, 0.15);
+      color: #ff8a94;
+      font-size: 14px;
     }
   </style>
 </head>
+
 <body>
   <div id="login-container">
-    <img src="/MiniVTT_Logo_DM.png" alt="Mini VTT Logo" style="width: 100px; margin-bottom: 20px;">
+    <img src="/MiniVTT_Logo_DM.png" alt="Mini VTT">
     <h1>DM Login</h1>
+    <p id="error" hidden>That password was not correct.</p>
     <p>
-      Welcome to Mini VTT! The DM password is generated when the server starts. <br>
-      Please check the server console for the password.
+      The DM password is printed to the server console at startup.
+      Set <code>DM_PASSWORD</code> in the environment to choose your own.
     </p>
     <form method="POST" action="/dm-login">
-      <label for="password">Enter DM Password:</label>
-      <input type="password" name="password" id="password" required autofocus placeholder="Password">
-      <button type="submit">Login</button>
+      <input type="password" name="password" id="password" required autofocus
+             placeholder="DM password" autocomplete="current-password">
+      <button type="submit">Log in</button>
     </form>
   </div>
+
+  <script>
+    document.getElementById('error').hidden = !new URLSearchParams(location.search).has('error');
+  </script>
 </body>
+
 </html>

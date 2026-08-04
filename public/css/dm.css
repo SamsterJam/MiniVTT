@@ -8,7 +8,11 @@
   align-items: center;
   box-sizing: border-box;
   z-index: 100;
-  transition: top 0.3s;
+  transition: transform 0.3s ease;
+}
+
+body.toolbar-hidden #toolbar {
+  transform: translateY(-100%);
 }
 
 #toolbar input {
@@ -145,14 +149,20 @@ ul {
   transform: translateX(0); /* Visible by default */
 }
 
-/* Hidden state */
-#music-panel.hidden {
-  transform: translateX(100%); /* Slide out to the right when hidden */
+/* Keep the canvas clear of the panel, and give the space back when it slides
+   away -- the two used to be independent, so hiding the panel left a 300px
+   dead strip on the right. */
+#scene-container {
+  margin-right: 300px;
+  transition: margin-right 0.3s ease;
 }
 
-/* Adjust the scene-container to avoid overlap if necessary */
-#scene-container {
-  margin-right: 300px; /* Same width as music panel */
+body.music-hidden #music-panel {
+  transform: translateX(100%);
+}
+
+body.music-hidden #scene-container {
+  margin-right: 0;
 }
 
 /* Music Tracks List */
@@ -191,9 +201,11 @@ ul {
   margin-right: 10px;
 }
 
-.play-pause-button i,
-.delete-button i {
-  font-size: 16px;
+.play-pause-button svg,
+.delete-button svg {
+  display: block;
+  width: 16px;
+  height: 16px;
 }
 
 .play-pause-button:hover,
@@ -259,7 +271,8 @@ ul {
 }
 
 #music-drop-area.dragover {
-  background-color: #f0f0f0;
+  border-color: #fff;
+  background-color: rgba(255, 255, 255, 0.12);
 }
 
 /* Dragging Styles */

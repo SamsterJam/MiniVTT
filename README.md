@@ -53,7 +53,8 @@ The interface supports panning and zooming so players can focus on different par
 
 ## To-Do
 
-- [ ] Security for websockets and overall application
+- [ ] Render the scene through a single world transform instead of per-token pixel math
+- [ ] Give the server authority over scene and music state so late joiners are in sync
 - [ ] Sortable music order in DM panel
 - [ ] Better documented hotkeys
 - [ ] Update/Improve DM interface & Multiselect
@@ -97,6 +98,20 @@ Server runs on port 3000 by default. Navigate to `http://localhost:3000` to get 
 
 Share the URL with your players - one person connects as DM at `/dm`, everyone else connects as players at the root URL.
 
+### Configuration
+
+All optional. Without them the server picks a random DM password each start and prints it to the console.
+
+| Variable | Purpose |
+| --- | --- |
+| `PORT` | Port to listen on (default `3000`) |
+| `DM_PASSWORD` | Fixed DM password, so a restart doesn't rotate it |
+| `SESSION_SECRET` | Fixed session secret, so a restart doesn't log the DM out |
+
+```sh
+DM_PASSWORD=hunter2 SESSION_SECRET=$(openssl rand -hex 32) npm start
+```
+
 ---
 
 ## Usage
@@ -136,7 +151,12 @@ Drag audio files into the music drop area or use the Music Manager panel. Playba
 
 ```
 .
-├── app.js                  // Express setup
+├── server.js              // Entry point: loads scenes, starts HTTP + sockets
+├── app.js                 // Express setup
+├── config.js              // Port, DM password, session secret
+├── session.js             // Session middleware, shared by Express and Socket.IO
+├── routes.js              // HTTP routes and DM authentication
+├── socketHandler.js       // Socket events and role authorisation
 ├── controllers
 │   ├── musicController.js
 │   ├── sceneController.js
@@ -144,31 +164,28 @@ Drag audio files into the music drop area or use the Music Manager panel. Playba
 ├── data
 │   └── scenes             // Stored scene data
 ├── middlewares
-│   ├── multerMusic.js     // Music upload handling
-│   └── multerUpload.js    // Token upload handling
+│   └── upload.js          // Shared upload handling for tokens and music
 ├── models
-│   └── sceneModel.js      // Scene data model
-├── public                 // Client-side files
-│   ├── css
-│   │   ├── dm.css
-│   │   └── styles.css
-│   ├── dm-login.html
-│   ├── dm.html            // DM interface
-│   ├── index.html         // Player interface
-│   ├── js
-│   │   ├── dm.js
-│   │   ├── musicManager.js
-│   │   ├── panZoomHandler.js
-│   │   ├── player.js
-│   │   ├── sceneManager.js
-│   │   ├── sceneRenderer.js
-│   │   ├── tokenManager.js
-│   │   └── utils.js
-│   ├── music              // Uploaded audio files
-│   └── uploads            // Uploaded token images/videos
-├── routes.js
-├── server.js              // Server entry point
-└── socketHandler.js       // WebSocket event handling
+│   └── sceneModel.js      // Scene state, persistence, and the trust boundary
+└── public                 // Client-side files
+    ├── css
+    │   ├── dm.css
+    │   └── styles.css
+    ├── dm-login.html
+    ├── dm.html            // DM interface
+    ├── index.html         // Player interface
+    ├── js
+    │   ├── dm.js
+    │   ├── icons.js
+    │   ├── musicManager.js
+    │   ├── panZoomHandler.js
+    │   ├── player.js
+    │   ├── sceneManager.js
+    │   ├── sceneRenderer.js
+    │   ├── tokenManager.js
+    │   └── utils.js
+    ├── music              // Uploaded audio files
+    └── uploads            // Uploaded token images/videos
 ```
 
 ---
@@ -182,17 +199,26 @@ Drag audio files into the music drop area or use the Music Manager panel. Playba
 - [SortableJS](https://github.com/SortableJS/Sortable) - Scene reordering
 - [Multer](https://github.com/expressjs/multer) - File upload handling
 
+Browser libraries are served from `node_modules`, not a CDN, so MiniVTT works
+on a network with no internet access.
+
 ---
 
 ## Security Disclaimer
 
-This is an experimental project and hasn't been security audited. If you're running it on anything other than a trusted local network, you should know:
+This is a hobby project and hasn't been security audited.
 
-- WebSocket connections are not secured by default
-- There's no authentication beyond the DM/player split
-- File uploads aren't validated beyond basic type checking
-- Anyone with network access can potentially connect
+The DM/player split is enforced on the server. Socket connections are
+authenticated from the same session Express uses, so a client cannot claim the
+DM role; players never receive hidden tokens, and they can only move tokens the
+DM has explicitly released to them. Token updates are checked against a field
+allowlist rather than merged blindly.
 
-Only run this with people you trust, preferably on a local network. If you need to expose it to the internet, put it behind proper authentication and use HTTPS/WSS.
+What it still does *not* do:
 
-Use at your own risk.
+- There is no per-player identity - every player is equivalent
+- There is no rate limiting on uploads or socket events
+- It speaks HTTP, not HTTPS, so the DM password crosses the network in the clear
+
+Run it on a local network with people you trust. If you expose it to the
+internet, put it behind a reverse proxy with TLS.
